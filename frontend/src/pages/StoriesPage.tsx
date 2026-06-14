@@ -102,10 +102,10 @@ export default function StoriesPage() {
   const [selectedTeamId, setSelectedTeamId] = useState('');
   const [selectedSprintId, setSelectedSprintId] = useState('');
 
-  // Auto-select first team once teams load from backend
+  // Auto-select first team once teams load (keep 'all' if user already chose it)
   useEffect(() => {
     if (teams.length > 0 && !selectedTeamId) {
-      setSelectedTeamId(teams[0].id);
+      setSelectedTeamId('all');
     }
   }, [teams]);
 
@@ -120,16 +120,19 @@ export default function StoriesPage() {
   const [saveError, setSaveError] = useState('');
 
   const teamSprints = useMemo(
-    () => sprints.filter((s) => s.teamId === selectedTeamId).sort((a, b) => a.startDate.localeCompare(b.startDate)),
+    () => selectedTeamId === 'all'
+      ? []
+      : sprints.filter((s) => s.teamId === selectedTeamId).sort((a, b) => a.startDate.localeCompare(b.startDate)),
     [sprints, selectedTeamId]
   );
 
   // Auto-select active sprint when team changes
   const resolvedSprintId = useMemo(() => {
+    if (selectedTeamId === 'all') return '';
     if (selectedSprintId && teamSprints.find((s) => s.id === selectedSprintId)) return selectedSprintId;
     const active = teamSprints.find((s) => s.status === 'active');
     return active?.id ?? teamSprints[0]?.id ?? '';
-  }, [selectedSprintId, teamSprints]);
+  }, [selectedSprintId, teamSprints, selectedTeamId]);
 
   const availableMonths = useMemo(() => {
     const keys = new Set(['2026-04', '2026-05', '2026-06', '2026-07', '2026-08']);
@@ -139,6 +142,7 @@ export default function StoriesPage() {
 
   const baseFiltered = useMemo(() => {
     if (viewBy === 'sprint') {
+      if (selectedTeamId === 'all') return stories;
       return stories.filter((s) => s.teamId === selectedTeamId && s.sprintId === resolvedSprintId);
     }
     return stories.filter((s) => getMonthKey(s.createdDate) === selectedMonth);
@@ -240,14 +244,15 @@ export default function StoriesPage() {
                 label="Team"
                 onChange={(e) => { setSelectedTeamId(e.target.value); setSelectedSprintId(''); }}
               >
+                <MenuItem value="all">All Teams</MenuItem>
                 {teams.map((t) => (
                   <MenuItem key={t.id} value={t.id}>{t.name}</MenuItem>
                 ))}
               </Select>
             </FormControl>
 
-            {/* Sprint chips */}
-            {teamSprints.length === 0 ? (
+            {/* Sprint chips — hidden when All Teams selected */}
+            {selectedTeamId === 'all' ? null : teamSprints.length === 0 ? (
               <Typography variant="body2" color="text.secondary">No sprints — add one in Teams</Typography>
             ) : (
               <Stack direction="row" spacing={1} flexWrap="wrap">
@@ -284,7 +289,7 @@ export default function StoriesPage() {
 
         <Box sx={{ flexGrow: 1 }} />
         <Button variant="contained" startIcon={<AddIcon />} onClick={openAdd}
-          disabled={viewBy === 'sprint' && !resolvedSprintId}>
+          disabled={viewBy === 'sprint' && (selectedTeamId === 'all' || !resolvedSprintId)}>
           Add Story
         </Button>
       </Stack>
