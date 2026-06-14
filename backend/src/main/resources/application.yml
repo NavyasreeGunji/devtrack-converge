@@ -12,6 +12,8 @@ spring:
       max-lifetime: 1800000
       keepalive-time: 60000
       maximum-pool-size: 5
+  main:
+    lazy-initialization: true
   jpa:
     hibernate:
       ddl-auto: update
