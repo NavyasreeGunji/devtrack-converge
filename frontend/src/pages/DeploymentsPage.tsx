@@ -47,16 +47,16 @@ const statusConfig: Record<DeploymentStatus, { color: 'default' | 'primary' | 's
 const UPCOMING_STATUSES: DeploymentStatus[] = ['planned', 'in_progress'];
 const COMPLETED_STATUSES: DeploymentStatus[] = ['success', 'failed', 'rolled_back'];
 
-const emptyForm: Omit<Deployment, 'id'> = {
+const emptyForm = (): Omit<Deployment, 'id'> => ({
   environment: 'staging',
   status: 'planned',
   deployedBy: '',
-  date: '2026-06-14',
+  date: new Date().toISOString().slice(0, 10),
   time: '18:00',
   description: '',
   notes: '',
   hours: undefined,
-};
+});
 
 export default function DeploymentsPage() {
   const { backendOnline, backendChecked } = useApp();
@@ -73,7 +73,7 @@ export default function DeploymentsPage() {
   const [tab, setTab] = useState(0);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editTarget, setEditTarget] = useState<Deployment | null>(null);
-  const [form, setForm] = useState<Omit<Deployment, 'id'>>(emptyForm);
+  const [form, setForm] = useState<Omit<Deployment, 'id'>>(emptyForm());
   const [saveError, setSaveError] = useState('');
 
   const upcoming = deployments
@@ -85,7 +85,7 @@ export default function DeploymentsPage() {
     .sort((a, b) => (b.date + b.time).localeCompare(a.date + a.time));
 
   const openAdd = () => {
-    setForm({ ...emptyForm, status: tab === 0 ? 'planned' : 'success' });
+    setForm({ ...emptyForm(), status: tab === 0 ? 'planned' : 'success' });
     setEditTarget(null);
     setSaveError('');
     setDialogOpen(true);

@@ -22,17 +22,17 @@ public class DeploymentController {
     }
 
     @GetMapping("/developer/{deployedBy}")
-    public List<Deployment> byDeveloper(@PathVariable String deployedBy) {
+    public List<Deployment> byDeveloper(@PathVariable("deployedBy") String deployedBy) {
         return repository.findByDeployedBy(deployedBy);
     }
 
     @GetMapping("/status/{status}")
-    public List<Deployment> byStatus(@PathVariable String status) {
+    public List<Deployment> byStatus(@PathVariable("status") String status) {
         return repository.findByStatus(status);
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<Deployment> get(@PathVariable Long id) {
+    public ResponseEntity<Deployment> get(@PathVariable("id") Long id) {
         return repository.findById(id)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
@@ -44,7 +44,7 @@ public class DeploymentController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Deployment> update(@PathVariable Long id, @RequestBody Deployment deployment) {
+    public ResponseEntity<Deployment> update(@PathVariable("id") Long id, @RequestBody Deployment deployment) {
         if (!repository.existsById(id)) return ResponseEntity.notFound().build();
         deployment.setId(id);
         return ResponseEntity.ok(repository.save(deployment));

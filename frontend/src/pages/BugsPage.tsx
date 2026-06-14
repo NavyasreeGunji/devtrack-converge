@@ -45,7 +45,7 @@ const statusConfig: Record<BugStatus, { color: 'error' | 'primary' | 'success' |
   closed: { color: 'default', label: 'Closed' },
 };
 
-const emptyForm: Omit<Bug, 'id'> = {
+const emptyForm = (): Omit<Bug, 'id'> => ({
   title: '',
   description: '',
   severity: 'medium',
@@ -53,9 +53,9 @@ const emptyForm: Omit<Bug, 'id'> = {
   environment: 'production',
   reporter: '',
   assignee: '',
-  createdDate: '2026-06-14',
+  createdDate: new Date().toISOString().slice(0, 10),
   resolvedDate: '',
-};
+});
 
 export default function BugsPage() {
   const { backendOnline, backendChecked } = useApp();
@@ -74,7 +74,7 @@ export default function BugsPage() {
   const [filterEnv, setFilterEnv] = useState('all');
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editTarget, setEditTarget] = useState<Bug | null>(null);
-  const [form, setForm] = useState<Omit<Bug, 'id'>>(emptyForm);
+  const [form, setForm] = useState<Omit<Bug, 'id'>>(emptyForm());
   const [saveError, setSaveError] = useState('');
 
   const filtered = bugs
@@ -83,7 +83,7 @@ export default function BugsPage() {
     .filter((b) => filterEnv === 'all' || b.environment === filterEnv);
 
   const openAdd = () => {
-    setForm(emptyForm);
+    setForm(emptyForm());
     setEditTarget(null);
     setSaveError('');
     setDialogOpen(true);
@@ -271,7 +271,16 @@ export default function BugsPage() {
                 <Select
                   value={form.status}
                   label="Status"
-                  onChange={(e) => setForm((f) => ({ ...f, status: e.target.value as BugStatus }))}
+                  onChange={(e) => {
+                    const newStatus = e.target.value as BugStatus;
+                    setForm((f) => ({
+                      ...f,
+                      status: newStatus,
+                      resolvedDate: (newStatus === 'resolved' || newStatus === 'closed')
+                        ? (f.resolvedDate || new Date().toISOString().slice(0, 10))
+                        : f.resolvedDate,
+                    }));
+                  }}
                 >
                   {Object.entries(statusConfig).map(([k, v]) => (
                     <MenuItem key={k} value={k}>{v.label}</MenuItem>

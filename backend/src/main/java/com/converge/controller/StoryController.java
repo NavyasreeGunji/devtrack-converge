@@ -22,22 +22,22 @@ public class StoryController {
     }
 
     @GetMapping("/team/{teamId}")
-    public List<Story> byTeam(@PathVariable Long teamId) {
+    public List<Story> byTeam(@PathVariable("teamId") Long teamId) {
         return repository.findByTeamId(teamId);
     }
 
     @GetMapping("/sprint/{sprintId}")
-    public List<Story> bySprint(@PathVariable Long sprintId) {
+    public List<Story> bySprint(@PathVariable("sprintId") Long sprintId) {
         return repository.findBySprintId(sprintId);
     }
 
     @GetMapping("/assignee/{assignee}")
-    public List<Story> byAssignee(@PathVariable String assignee) {
+    public List<Story> byAssignee(@PathVariable("assignee") String assignee) {
         return repository.findByAssignee(assignee);
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<Story> get(@PathVariable Long id) {
+    public ResponseEntity<Story> get(@PathVariable("id") Long id) {
         return repository.findById(id)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
@@ -49,7 +49,7 @@ public class StoryController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Story> update(@PathVariable Long id, @RequestBody Story story) {
+    public ResponseEntity<Story> update(@PathVariable("id") Long id, @RequestBody Story story) {
         if (!repository.existsById(id)) return ResponseEntity.notFound().build();
         story.setId(id);
         return ResponseEntity.ok(repository.save(story));

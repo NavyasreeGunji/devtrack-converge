@@ -88,6 +88,7 @@ export default function DashboardPage() {
   const criticalBugs = bugs.filter((b) => b.severity === 'critical' && b.status !== 'closed' && b.status !== 'resolved').length;
   const todayLogs = dailyLogs.filter((l) => l.date === today);
   const todayHours = todayLogs.reduce((sum, l) => sum + l.hours, 0);
+  const todayDevCount = new Set(todayLogs.map((l) => l.developer)).size;
   const doneStories = stories.filter((s) => s.status === 'done').length;
 
   const metrics = [
@@ -115,7 +116,7 @@ export default function DashboardPage() {
     {
       label: 'Hours Logged Today',
       value: todayHours,
-      sub: `by ${todayLogs.length} developers`,
+      sub: `by ${todayDevCount} developer${todayDevCount !== 1 ? 's' : ''}`,
       icon: <AccessTimeIcon />,
       color: '#7C3AED',
     },

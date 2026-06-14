@@ -22,12 +22,12 @@ public class SprintController {
     }
 
     @GetMapping("/team/{teamId}")
-    public List<Sprint> byTeam(@PathVariable Long teamId) {
+    public List<Sprint> byTeam(@PathVariable("teamId") Long teamId) {
         return repository.findByTeamId(teamId);
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<Sprint> get(@PathVariable Long id) {
+    public ResponseEntity<Sprint> get(@PathVariable("id") Long id) {
         return repository.findById(id)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
@@ -39,7 +39,7 @@ public class SprintController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Sprint> update(@PathVariable Long id, @RequestBody Sprint sprint) {
+    public ResponseEntity<Sprint> update(@PathVariable("id") Long id, @RequestBody Sprint sprint) {
         if (!repository.existsById(id)) return ResponseEntity.notFound().build();
         sprint.setId(id);
         return ResponseEntity.ok(repository.save(sprint));

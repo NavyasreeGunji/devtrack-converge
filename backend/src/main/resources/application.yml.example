@@ -1,0 +1,21 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://<host>/<db>?sslmode=require
+    username: <username>
+    password: <password>
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      connection-test-query: SELECT 1
+      keepalive-time: 60000
+      maximum-pool-size: 5
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+  jackson:
+    serialization:
+      write-dates-as-timestamps: false
+    deserialization:
+      fail-on-unknown-properties: false
+server:
+  port: 8080

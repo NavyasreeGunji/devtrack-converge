@@ -20,35 +20,41 @@ import {
   FormControl,
   InputLabel,
   Stack,
+  Autocomplete,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import Alert from '@mui/material/Alert';
 import {
   DailyLog,
+  Story,
   dailyLogs as initialLogs,
+  initialStories,
   developers,
 } from '../data/mockData';
 import { useApp } from '../context/AppContext';
-import { apiGetLogs, apiCreateLog } from '../api/api';
+import { apiGetLogs, apiCreateLog, apiGetStories } from '../api/api';
 
-const emptyForm: Omit<DailyLog, 'id'> = {
+const emptyForm = (): Omit<DailyLog, 'id'> => ({
   developer: '',
   date: new Date().toISOString().slice(0, 10),
   title: '',
   description: '',
   hours: 4,
-};
+});
 
 export default function DailyLogPage() {
   const { currentUser, backendOnline, backendChecked } = useApp();
   const [logs, setLogs] = useState<DailyLog[]>([]);
+  const [allStories, setAllStories] = useState<Story[]>([]);
 
   useEffect(() => {
     if (!backendChecked) return;
     if (backendOnline) {
       apiGetLogs().then(setLogs).catch(() => setLogs(initialLogs));
+      apiGetStories().then(setAllStories).catch(() => setAllStories(initialStories));
     } else {
       setLogs(initialLogs);
+      setAllStories(initialStories);
     }
   }, [backendChecked, backendOnline]);
 
@@ -57,15 +63,16 @@ export default function DailyLogPage() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [saveError, setSaveError] = useState('');
   const [form, setForm] = useState<Omit<DailyLog, 'id'>>({
-    ...emptyForm,
+    ...emptyForm(),
     developer: currentUser?.name ?? '',
   });
 
   useEffect(() => {
-    if (currentUser) {
-      setFilterDev(currentUser.name);
-    }
+    if (currentUser) setFilterDev(currentUser.name);
   }, [currentUser]);
+
+  // Stories assigned to the selected developer
+  const devStories = allStories.filter((s) => s.assignee === form.developer);
 
   const filtered = logs
     .filter((l) => filterDev === 'all' || l.developer === filterDev)
@@ -85,7 +92,7 @@ export default function DailyLogPage() {
         setLogs((prev) => [...prev, { ...form, id: newId }]);
       }
       setDialogOpen(false);
-      setForm({ ...emptyForm, developer: currentUser?.name ?? '' });
+      setForm({ ...emptyForm(), developer: currentUser?.name ?? '' });
     } catch (err: any) {
       setSaveError(err?.message ?? 'Save failed. Check the backend is running and try again.');
     }
@@ -103,9 +110,7 @@ export default function DailyLogPage() {
           >
             <MenuItem value="all">All Developers</MenuItem>
             {developers.map((d) => (
-              <MenuItem key={d} value={d}>
-                {d}
-              </MenuItem>
+              <MenuItem key={d} value={d}>{d}</MenuItem>
             ))}
           </Select>
         </FormControl>
@@ -126,7 +131,7 @@ export default function DailyLogPage() {
           startIcon={<AddIcon />}
           onClick={() => {
             setSaveError('');
-            setForm({ ...emptyForm, developer: currentUser?.name ?? '' });
+            setForm({ ...emptyForm(), developer: currentUser?.name ?? '' });
             setDialogOpen(true);
           }}
         >
@@ -138,27 +143,26 @@ export default function DailyLogPage() {
         <Table size="small">
           <TableHead>
             <TableRow sx={{ bgcolor: '#F8FAFC' }}>
-              {['Date', 'Title', 'Description', 'Hours'].map((h) => (
-                <TableCell key={h} sx={{ fontWeight: 600, fontSize: 12, color: '#64748b' }}>
-                  {h}
-                </TableCell>
-              ))}
+              <TableCell sx={{ fontWeight: 600, fontSize: 12, color: '#64748b', textAlign: 'center', width: '12%' }}>Date</TableCell>
+              <TableCell sx={{ fontWeight: 600, fontSize: 12, color: '#64748b', textAlign: 'center', width: '28%' }}>Title</TableCell>
+              <TableCell sx={{ fontWeight: 600, fontSize: 12, color: '#64748b', textAlign: 'center', width: '48%' }}>Description</TableCell>
+              <TableCell sx={{ fontWeight: 600, fontSize: 12, color: '#64748b', textAlign: 'center', width: '12%' }}>Hours</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
             {filtered.map((log) => (
               <TableRow key={log.id} hover>
-                <TableCell>
-                  <Typography variant="body2">{log.date}</Typography>
+                <TableCell sx={{ textAlign: 'center' }}>
+                  <Typography variant="body2" sx={{ textAlign: 'center' }}>{log.date}</Typography>
                 </TableCell>
-                <TableCell>
-                  <Typography variant="body2" fontWeight={600}>{log.title}</Typography>
+                <TableCell sx={{ textAlign: 'center' }}>
+                  <Typography variant="body2" fontWeight={600} sx={{ textAlign: 'center' }}>{log.title}</Typography>
                 </TableCell>
-                <TableCell sx={{ maxWidth: 360 }}>
-                  <Typography variant="body2">{log.description}</Typography>
+                <TableCell sx={{ textAlign: 'center' }}>
+                  <Typography variant="body2" sx={{ textAlign: 'center' }}>{log.description}</Typography>
                 </TableCell>
-                <TableCell>
-                  <Typography variant="body2" fontWeight={700}>{log.hours}h</Typography>
+                <TableCell sx={{ textAlign: 'center' }}>
+                  <Typography variant="body2" fontWeight={700} sx={{ textAlign: 'center' }}>{log.hours}h</Typography>
                 </TableCell>
               </TableRow>
             ))}
@@ -176,12 +180,10 @@ export default function DailyLogPage() {
                 <Select
                   value={form.developer}
                   label="Developer"
-                  onChange={(e) => setForm((f) => ({ ...f, developer: e.target.value }))}
+                  onChange={(e) => setForm((f) => ({ ...f, developer: e.target.value, title: '' }))}
                 >
                   {developers.map((d) => (
-                    <MenuItem key={d} value={d}>
-                      {d}
-                    </MenuItem>
+                    <MenuItem key={d} value={d}>{d}</MenuItem>
                   ))}
                 </Select>
               </FormControl>
@@ -195,14 +197,23 @@ export default function DailyLogPage() {
                 fullWidth
               />
             </Stack>
-            <TextField
-              label="Title"
-              value={form.title}
-              onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
-              fullWidth
-              size="small"
-              placeholder="e.g. Dashboard Analytics, Login Bug Fix"
+
+            <Autocomplete
+              options={devStories}
+              getOptionLabel={(s) => s.title}
+              value={devStories.find((s) => s.title === form.title) ?? null}
+              onChange={(_, story) => setForm((f) => ({ ...f, title: story?.title ?? '' }))}
+              renderInput={(params) => (
+                <TextField
+                  {...params}
+                  label="Story / Task"
+                  size="small"
+                  placeholder={devStories.length === 0 ? 'No stories assigned to this developer' : 'Select a story…'}
+                />
+              )}
+              noOptionsText="No stories assigned to this developer"
             />
+
             <TextField
               label="Description"
               value={form.description}

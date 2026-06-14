@@ -22,7 +22,7 @@ public class TeamController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<Team> get(@PathVariable Long id) {
+    public ResponseEntity<Team> get(@PathVariable("id") Long id) {
         return repository.findById(id)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
@@ -34,7 +34,7 @@ public class TeamController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Team> update(@PathVariable Long id, @RequestBody Team team) {
+    public ResponseEntity<Team> update(@PathVariable("id") Long id, @RequestBody Team team) {
         if (!repository.existsById(id)) return ResponseEntity.notFound().build();
         team.setId(id);
         return ResponseEntity.ok(repository.save(team));

@@ -11,6 +11,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/status")
 public class DailyStatusController {
+
     private final DailyStatusRepository repository;
 
     public DailyStatusController(DailyStatusRepository repository) {
@@ -23,17 +24,17 @@ public class DailyStatusController {
     }
 
     @GetMapping("/developer/{developer}")
-    public List<DailyStatus> byDeveloper(@PathVariable String developer) {
+    public List<DailyStatus> byDeveloper(@PathVariable("developer") String developer) {
         return repository.findByDeveloper(developer);
     }
 
     @GetMapping("/date/{date}")
-    public List<DailyStatus> byDate(@PathVariable String date) {
+    public List<DailyStatus> byDate(@PathVariable("date") String date) {
         return repository.findByDate(LocalDate.parse(date));
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<DailyStatus> get(@PathVariable Long id) {
+    public ResponseEntity<DailyStatus> get(@PathVariable("id") Long id) {
         return repository.findById(id)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
@@ -45,14 +46,14 @@ public class DailyStatusController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<DailyStatus> update(@PathVariable Long id, @RequestBody DailyStatus dailyStatus) {
+    public ResponseEntity<DailyStatus> update(@PathVariable("id") Long id, @RequestBody DailyStatus dailyStatus) {
         if (!repository.existsById(id)) return ResponseEntity.notFound().build();
         dailyStatus.setId(id);
         return ResponseEntity.ok(repository.save(dailyStatus));
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> delete(@PathVariable Long id) {
+    public ResponseEntity<Void> delete(@PathVariable("id") Long id) {
         if (!repository.existsById(id)) return ResponseEntity.notFound().build();
         repository.deleteById(id);
         return ResponseEntity.noContent().build();

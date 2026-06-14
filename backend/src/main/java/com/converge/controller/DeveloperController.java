@@ -22,7 +22,7 @@ public class DeveloperController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<Developer> get(@PathVariable Long id) {
+    public ResponseEntity<Developer> get(@PathVariable("id") Long id) {
         return repository.findById(id)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
@@ -34,7 +34,7 @@ public class DeveloperController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Developer> update(@PathVariable Long id, @RequestBody Developer developer) {
+    public ResponseEntity<Developer> update(@PathVariable("id") Long id, @RequestBody Developer developer) {
         if (!repository.existsById(id)) return ResponseEntity.notFound().build();
         developer.setId(id);
         return ResponseEntity.ok(repository.save(developer));

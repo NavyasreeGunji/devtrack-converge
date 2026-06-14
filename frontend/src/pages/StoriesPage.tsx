@@ -67,6 +67,8 @@ function formatMonth(key: string) {
   return `${MONTH_NAMES[Number(parts[1]) - 1]} ${parts[0]}`;
 }
 
+const today = () => new Date().toISOString().slice(0, 10);
+
 const emptyForm = (teamId = '', sprintId = ''): Omit<Story, 'id'> => ({
   title: '',
   description: '',
@@ -74,7 +76,7 @@ const emptyForm = (teamId = '', sprintId = ''): Omit<Story, 'id'> => ({
   status: 'backlog',
   reporter: '',
   assignee: '',
-  createdDate: '2026-06-14',
+  createdDate: today(),
   dueDate: '',
   startedDate: '',
   completedDate: '',
@@ -441,7 +443,16 @@ export default function StoriesPage() {
                 size="small" sx={{ width: 130 }} inputProps={{ min: 1, max: 100 }} />
               <FormControl size="small" fullWidth>
                 <InputLabel>Status</InputLabel>
-                <Select value={form.status} label="Status" onChange={(e) => setForm((f) => ({ ...f, status: e.target.value as StoryStatus }))}>
+                <Select value={form.status} label="Status" onChange={(e) => {
+                  const newStatus = e.target.value as StoryStatus;
+                  setForm((f) => ({
+                    ...f,
+                    status: newStatus,
+                    completedDate: newStatus === 'done'
+                      ? (f.completedDate || today())
+                      : f.completedDate,
+                  }));
+                }}>
                   {statusOptions.map((o) => <MenuItem key={o.value} value={o.value}>{o.label}</MenuItem>)}
                 </Select>
               </FormControl>

@@ -22,17 +22,17 @@ public class BugController {
     }
 
     @GetMapping("/status/{status}")
-    public List<Bug> byStatus(@PathVariable String status) {
+    public List<Bug> byStatus(@PathVariable("status") String status) {
         return repository.findByStatus(status);
     }
 
     @GetMapping("/assignee/{assignee}")
-    public List<Bug> byAssignee(@PathVariable String assignee) {
+    public List<Bug> byAssignee(@PathVariable("assignee") String assignee) {
         return repository.findByAssignee(assignee);
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<Bug> get(@PathVariable Long id) {
+    public ResponseEntity<Bug> get(@PathVariable("id") Long id) {
         return repository.findById(id)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
@@ -44,7 +44,7 @@ public class BugController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Bug> update(@PathVariable Long id, @RequestBody Bug bug) {
+    public ResponseEntity<Bug> update(@PathVariable("id") Long id, @RequestBody Bug bug) {
         if (!repository.existsById(id)) return ResponseEntity.notFound().build();
         bug.setId(id);
         return ResponseEntity.ok(repository.save(bug));
