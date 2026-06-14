@@ -10,6 +10,8 @@ import {
 } from '../api/api';
 
 const STORAGE_KEY = 'devtrack_user';
+const WAKE_TIMEOUT_MS = 90_000; // give Render 90 s to cold-start
+const RETRY_INTERVAL_MS = 5_000;
 
 interface AppContextType {
   teams: Team[];
@@ -18,6 +20,7 @@ interface AppContextType {
   currentUser: DeveloperProfile | null;
   backendOnline: boolean;
   backendChecked: boolean;
+  backendWaking: boolean;   // true while retrying during cold-start
   login: (username: string, password: string) => Promise<void>;
   logout: () => void;
   addTeam: (team: Omit<Team, 'id'>) => Promise<void>;
@@ -46,24 +49,45 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [currentUser, setCurrentUser] = useState<DeveloperProfile | null>(loadUser);
   const [backendOnline, setBackendOnline] = useState(false);
   const [backendChecked, setBackendChecked] = useState(false);
+  const [backendWaking, setBackendWaking] = useState(true);
 
-  // Probe backend; if it responds use API data, otherwise fall back to mock data
+  // Probe backend with retries for Render cold-start (up to 90 s)
   useEffect(() => {
-    Promise.all([apiGetTeams(), apiGetSprints(), apiGetDevelopers()])
-      .then(([t, s, d]) => {
-        setTeams(t);
-        setSprints(s);
-        setDeveloperProfiles(d);
-        setBackendOnline(true);
-        setBackendChecked(true);
-      })
-      .catch(() => {
+    let cancelled = false;
+
+    const probe = async () => {
+      const deadline = Date.now() + WAKE_TIMEOUT_MS;
+
+      while (Date.now() < deadline) {
+        try {
+          const [t, s, d] = await Promise.all([apiGetTeams(), apiGetSprints(), apiGetDevelopers()]);
+          if (cancelled) return;
+          setTeams(t);
+          setSprints(s);
+          setDeveloperProfiles(d);
+          setBackendOnline(true);
+          setBackendChecked(true);
+          setBackendWaking(false);
+          return;
+        } catch {
+          if (cancelled) return;
+          await new Promise((r) => setTimeout(r, RETRY_INTERVAL_MS));
+        }
+      }
+
+      // Timed out — fall back to mock data
+      if (!cancelled) {
         setTeams(initialTeams);
         setSprints(initialSprints);
         setDeveloperProfiles(initialDeveloperProfiles);
         setBackendOnline(false);
         setBackendChecked(true);
-      });
+        setBackendWaking(false);
+      }
+    };
+
+    probe();
+    return () => { cancelled = true; };
   }, []);
 
   const login = async (username: string, password: string) => {
@@ -145,7 +169,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   return (
     <AppContext.Provider value={{
-      teams, sprints, developerProfiles, currentUser, backendOnline, backendChecked,
+      teams, sprints, developerProfiles, currentUser, backendOnline, backendChecked, backendWaking,
       login, logout, addTeam, updateTeam, addSprint, updateSprint,
       addDeveloper, updateDeveloper,
     }}>

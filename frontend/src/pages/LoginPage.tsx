@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Box, Paper, Typography, TextField, Button, InputAdornment, IconButton, Alert,
+  LinearProgress, Collapse,
 } from '@mui/material';
 import PersonOutlineIcon from '@mui/icons-material/PersonOutline';
 import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
@@ -9,7 +10,14 @@ import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
 import { useApp } from '../context/AppContext';
 
 export default function LoginPage() {
-  const { login } = useApp();
+  const { login, backendWaking, backendOnline, backendChecked } = useApp();
+  const [elapsed, setElapsed] = useState(0);
+
+  useEffect(() => {
+    if (!backendWaking) return;
+    const t = setInterval(() => setElapsed((s) => s + 1), 1000);
+    return () => clearInterval(t);
+  }, [backendWaking]);
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -53,6 +61,26 @@ export default function LoginPage() {
         <Typography variant="subtitle1" fontWeight={600} color="#1e293b" sx={{ mb: 2.5 }}>
           Sign in to your account
         </Typography>
+
+        <Collapse in={backendWaking}>
+          <Box sx={{ mb: 2, borderRadius: 1, overflow: 'hidden', border: '1px solid #bfdbfe', bgcolor: '#eff6ff' }}>
+            <LinearProgress sx={{ height: 3 }} />
+            <Box sx={{ px: 1.5, py: 1 }}>
+              <Typography variant="caption" color="#1d4ed8" fontWeight={600}>
+                Server is starting up… ({elapsed}s)
+              </Typography>
+              <Typography variant="caption" color="#3b82f6" display="block" sx={{ mt: 0.25 }}>
+                This takes up to 60 seconds on first load. You can sign in once it's ready.
+              </Typography>
+            </Box>
+          </Box>
+        </Collapse>
+
+        <Collapse in={backendChecked && !backendOnline}>
+          <Alert severity="warning" sx={{ mb: 2 }}>
+            Server unreachable — using offline mode. Your changes won't be saved.
+          </Alert>
+        </Collapse>
 
         {error && (
           <Alert severity="error" sx={{ mb: 2 }}>
@@ -107,10 +135,10 @@ export default function LoginPage() {
           fullWidth
           size="large"
           onClick={handleLogin}
-          disabled={!username || !password || loading}
+          disabled={!username || !password || loading || backendWaking}
           sx={{ fontWeight: 700 }}
         >
-          {loading ? 'Signing in…' : 'Sign In'}
+          {backendWaking ? `Server starting… (${elapsed}s)` : loading ? 'Signing in…' : 'Sign In'}
         </Button>
       </Paper>
     </Box>
