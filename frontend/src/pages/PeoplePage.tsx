@@ -66,7 +66,8 @@ export default function PeoplePage() {
 
   const displayed = developerProfiles
     .filter((d) => filterRole === 'all' || d.role === filterRole)
-    .filter((d) => filterTeam === 'all' || d.teamIds.includes(filterTeam));
+    .filter((d) => filterTeam === 'all' || d.teamIds.includes(filterTeam))
+    .sort((a, b) => Number(a.id.replace('DEV-', '')) - Number(b.id.replace('DEV-', '')));
 
   const openAdd = () => { setForm(emptyForm); setEditTarget(null); setDialogOpen(true); };
   const openEdit = (d: DeveloperProfile) => {
