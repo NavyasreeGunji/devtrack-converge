@@ -437,7 +437,7 @@ export default function StoriesPage() {
           <Stack spacing={2} sx={{ mt: 1 }}>
             <TextField label="Title" value={form.title} onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))} fullWidth size="small" />
             <TextField label="Description" value={form.description} onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))} fullWidth size="small" multiline rows={2} />
-            <Stack direction="row" spacing={2}>
+            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
               <TextField label="Story Points" type="number" value={form.points}
                 onChange={(e) => setForm((f) => ({ ...f, points: Number(e.target.value) }))}
                 size="small" sx={{ width: 130 }} inputProps={{ min: 1, max: 100 }} />
@@ -448,6 +448,9 @@ export default function StoriesPage() {
                   setForm((f) => ({
                     ...f,
                     status: newStatus,
+                    startedDate: newStatus === 'in_progress'
+                      ? (f.startedDate || today())
+                      : f.startedDate,
                     completedDate: newStatus === 'done'
                       ? (f.completedDate || today())
                       : f.completedDate,
@@ -457,7 +460,7 @@ export default function StoriesPage() {
                 </Select>
               </FormControl>
             </Stack>
-            <Stack direction="row" spacing={2}>
+            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
               <FormControl size="small" fullWidth>
                 <InputLabel>Team</InputLabel>
                 <Select value={form.teamId} label="Team" onChange={(e) => setForm((f) => ({ ...f, teamId: e.target.value, sprintId: '' }))}>
@@ -473,7 +476,7 @@ export default function StoriesPage() {
                 </Select>
               </FormControl>
             </Stack>
-            <Stack direction="row" spacing={2}>
+            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
               <TextField
                 label="Reporter"
                 value={form.reporter}
@@ -489,14 +492,14 @@ export default function StoriesPage() {
                 </Select>
               </FormControl>
             </Stack>
-            <Stack direction="row" spacing={2}>
-              <Stack direction="row" spacing={2}>
-                <TextField label="Created Date" type="date" value={form.createdDate} onChange={(e) => setForm((f) => ({ ...f, createdDate: e.target.value }))} size="small" InputLabelProps={{ shrink: true }} fullWidth />
-                <TextField label="Due Date" type="date" value={form.dueDate} onChange={(e) => setForm((f) => ({ ...f, dueDate: e.target.value }))} size="small" InputLabelProps={{ shrink: true }} fullWidth />
-              </Stack>
-              <TextField label="Started Date" type="date" value={form.startedDate} onChange={(e) => setForm((f) => ({ ...f, startedDate: e.target.value }))} size="small" InputLabelProps={{ shrink: true }} fullWidth />
+            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
+              <TextField label="Created Date" type="date" value={form.createdDate} onChange={(e) => setForm((f) => ({ ...f, createdDate: e.target.value }))} size="small" InputLabelProps={{ shrink: true }} fullWidth />
+              <TextField label="Due Date" type="date" value={form.dueDate} onChange={(e) => setForm((f) => ({ ...f, dueDate: e.target.value }))} size="small" InputLabelProps={{ shrink: true }} fullWidth />
             </Stack>
-            <TextField label="Completed Date" type="date" value={form.completedDate} onChange={(e) => setForm((f) => ({ ...f, completedDate: e.target.value }))} size="small" InputLabelProps={{ shrink: true }} fullWidth />
+            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
+              <TextField label="Started Date" type="date" value={form.startedDate} onChange={(e) => setForm((f) => ({ ...f, startedDate: e.target.value }))} size="small" InputLabelProps={{ shrink: true }} fullWidth />
+              <TextField label="Completed Date" type="date" value={form.completedDate} onChange={(e) => setForm((f) => ({ ...f, completedDate: e.target.value }))} size="small" InputLabelProps={{ shrink: true }} fullWidth />
+            </Stack>
           </Stack>
         </DialogContent>
         {saveError && (

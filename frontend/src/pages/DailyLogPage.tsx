@@ -100,7 +100,7 @@ export default function DailyLogPage() {
 
   return (
     <Box>
-      <Stack direction="row" spacing={2} sx={{ mb: 2 }} alignItems="center">
+      <Stack direction="row" spacing={2} sx={{ mb: 2 }} alignItems="center" flexWrap="wrap" useFlexGap>
         <FormControl size="small" sx={{ minWidth: 160 }}>
           <InputLabel>Developer</InputLabel>
           <Select
@@ -122,7 +122,7 @@ export default function DailyLogPage() {
           onChange={(e) => setFilterDate(e.target.value)}
           InputLabelProps={{ shrink: true }}
         />
-        <Typography variant="body2" color="text.secondary" sx={{ pl: 1 }}>
+        <Typography variant="body2" color="text.secondary">
           {filtered.length} entries · {totalHours}h total
         </Typography>
         <Box sx={{ flexGrow: 1 }} />
@@ -174,7 +174,7 @@ export default function DailyLogPage() {
         <DialogTitle>Log Daily Work</DialogTitle>
         <DialogContent>
           <Stack spacing={2} sx={{ mt: 1 }}>
-            <Stack direction="row" spacing={2}>
+            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
               <FormControl size="small" fullWidth>
                 <InputLabel>Developer</InputLabel>
                 <Select

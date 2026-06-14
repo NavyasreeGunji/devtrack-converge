@@ -123,7 +123,7 @@ export default function BugsPage() {
 
   return (
     <Box>
-      <Stack direction="row" spacing={2} sx={{ mb: 2 }} alignItems="center">
+      <Stack direction="row" spacing={2} sx={{ mb: 2 }} alignItems="center" flexWrap="wrap" useFlexGap>
         <FormControl size="small" sx={{ minWidth: 130 }}>
           <InputLabel>Status</InputLabel>
           <Select value={filterStatus} label="Status" onChange={(e) => setFilterStatus(e.target.value)}>
@@ -253,7 +253,7 @@ export default function BugsPage() {
               multiline
               rows={3}
             />
-            <Stack direction="row" spacing={2}>
+            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
               <FormControl size="small" fullWidth>
                 <InputLabel>Severity</InputLabel>
                 <Select
