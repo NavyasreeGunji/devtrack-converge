@@ -107,7 +107,7 @@ export default function PeoplePage() {
 
   return (
     <Box>
-      <Stack direction="row" spacing={2} sx={{ mb: 2 }} alignItems="center">
+      <Stack direction="row" spacing={2} sx={{ mb: 2 }} alignItems="center" flexWrap="wrap" useFlexGap>
         <FormControl size="small" sx={{ minWidth: 150 }}>
           <InputLabel>Role</InputLabel>
           <Select value={filterRole} label="Role" onChange={(e) => setFilterRole(e.target.value)}>
@@ -166,9 +166,6 @@ export default function PeoplePage() {
                   <Box>
                     <Typography variant="subtitle1" fontWeight={700} lineHeight={1.2}>
                       {dev.name}
-                    </Typography>
-                    <Typography variant="caption" color="text.secondary">
-                      {dev.id}
                     </Typography>
                   </Box>
                 </Stack>

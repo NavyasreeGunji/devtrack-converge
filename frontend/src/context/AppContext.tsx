@@ -90,6 +90,15 @@ export function AppProvider({ children }: { children: ReactNode }) {
     return () => { cancelled = true; };
   }, []);
 
+  // Keep backend awake every 10 min — only while someone is logged in
+  useEffect(() => {
+    if (!backendOnline || !currentUser) return;
+    const interval = setInterval(() => {
+      apiGetTeams().catch(() => {});
+    }, 10 * 60 * 1000);
+    return () => clearInterval(interval);
+  }, [backendOnline, currentUser]);
+
   const login = async (username: string, password: string) => {
     if (backendOnline) {
       const dev = await apiLogin(username, password);
