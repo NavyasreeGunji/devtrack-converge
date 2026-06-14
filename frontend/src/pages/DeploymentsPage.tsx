@@ -128,7 +128,7 @@ export default function DeploymentsPage() {
 
   return (
     <Box>
-      <Stack direction="row" alignItems="center" sx={{ mb: 2 }}>
+      <Stack direction={{ xs: 'column', sm: 'row' }} alignItems={{ xs: 'stretch', sm: 'center' }} sx={{ mb: 2 }} gap={1}>
         <Tabs value={tab} onChange={(_, v) => setTab(v)} sx={{ flexGrow: 1 }}>
           <Tab
             label={
@@ -147,7 +147,7 @@ export default function DeploymentsPage() {
             }
           />
         </Tabs>
-        <Button variant="contained" startIcon={<RocketLaunchIcon />} onClick={openAdd}>
+        <Button variant="contained" startIcon={<RocketLaunchIcon />} onClick={openAdd} sx={{ flexShrink: 0 }}>
           {tab === 0 ? 'Schedule Deployment' : 'Log Deployment'}
         </Button>
       </Stack>
