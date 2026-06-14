@@ -1,0 +1,365 @@
+import { useState, useEffect, useMemo } from 'react';
+import {
+  Box,
+  Paper,
+  Typography,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Chip,
+  MenuItem,
+  Select,
+  FormControl,
+  InputLabel,
+  Stack,
+  Grid,
+  TextField,
+  Button,
+  Tooltip,
+} from '@mui/material';
+import DownloadIcon from '@mui/icons-material/Download';
+import { Story, initialStories, developers, StoryStatus } from '../data/mockData';
+import { useApp } from '../context/AppContext';
+import { apiGetStories } from '../api/api';
+
+const statusConfig: Record<StoryStatus, { color: 'default' | 'primary' | 'warning' | 'success' | 'info'; label: string }> = {
+  backlog:         { color: 'default',  label: 'Backlog' },
+  to_do:           { color: 'default',  label: 'To Do' },
+  in_progress:     { color: 'primary',  label: 'In Progress' },
+  in_review:       { color: 'warning',  label: 'In Review' },
+  for_qe_testing:  { color: 'info',     label: 'Review / Testing' },
+  done:            { color: 'success',  label: 'Done' },
+  on_hold:         { color: 'default',  label: 'On Hold' },
+};
+
+export default function ReportsPage() {
+  const { teams, sprints, backendOnline, backendChecked } = useApp();
+  const [stories, setStories] = useState<Story[]>([]);
+
+  useEffect(() => {
+    if (!backendChecked) return;
+    if (backendOnline) {
+      apiGetStories().then(setStories).catch(() => setStories(initialStories));
+    } else {
+      setStories(initialStories);
+    }
+  }, [backendChecked, backendOnline]);
+
+  const [filterStatus, setFilterStatus] = useState('all');
+  const [filterAssignee, setFilterAssignee] = useState('all');
+  const [filterTeamId, setFilterTeamId] = useState('all');
+  const [filterSprintId, setFilterSprintId] = useState('all');
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
+
+  const teamSprints = useMemo(
+    () => sprints.filter((s) => filterTeamId === 'all' || s.teamId === filterTeamId),
+    [sprints, filterTeamId]
+  );
+
+  const filtered = useMemo(
+    () =>
+      stories
+        .filter((s) => filterStatus === 'all' || s.status === filterStatus)
+        .filter((s) => filterAssignee === 'all' || s.assignee === filterAssignee)
+        .filter((s) => filterTeamId === 'all' || s.teamId === filterTeamId)
+        .filter((s) => filterSprintId === 'all' || s.sprintId === filterSprintId)
+        .filter((s) => !dateFrom || (s.createdDate && s.createdDate >= dateFrom))
+        .filter((s) => !dateTo || (s.createdDate && s.createdDate <= dateTo)),
+    [stories, filterStatus, filterAssignee, filterTeamId, filterSprintId, dateFrom, dateTo]
+  );
+
+  const totalPoints = filtered.reduce((sum, s) => sum + s.points, 0);
+  const donePoints = filtered.filter((s) => s.status === 'done').reduce((sum, s) => sum + s.points, 0);
+  const forQEPoints = filtered.filter((s) => s.status === 'for_qe_testing').reduce((sum, s) => sum + s.points, 0);
+  const inProgressPoints = filtered.filter((s) => s.status === 'in_progress').reduce((sum, s) => sum + s.points, 0);
+
+  const byAssignee = useMemo(
+    () =>
+      developers
+        .map((dev) => {
+          const devStories = filtered.filter((s) => s.assignee === dev);
+          return {
+            dev,
+            count: devStories.length,
+            total: devStories.reduce((sum, s) => sum + s.points, 0),
+            done: devStories.filter((s) => s.status === 'done').reduce((sum, s) => sum + s.points, 0),
+            forQE: devStories.filter((s) => s.status === 'for_qe_testing').reduce((sum, s) => sum + s.points, 0),
+            inProgress: devStories.filter((s) => s.status === 'in_progress').reduce((sum, s) => sum + s.points, 0),
+          };
+        })
+        .filter((r) => r.count > 0),
+    [filtered]
+  );
+
+  const handleExportCSV = () => {
+    const headers = ['ID', 'Title', 'Points', 'Status', 'Reporter', 'Assignee', 'Team', 'Sprint', 'Due Date', 'Created', 'Started', 'Completed'];
+    const rows = filtered.map((s) => {
+      const team = teams.find((t) => t.id === s.teamId)?.name ?? '';
+      const sprint = sprints.find((sp) => sp.id === s.sprintId);
+      return [
+        s.id, `"${s.title}"`, s.points, statusConfig[s.status].label,
+        s.reporter, s.assignee, team, sprint?.name ?? '',
+        sprint?.endDate ?? '', s.createdDate, s.startedDate, s.completedDate,
+      ].join(',');
+    });
+    const csv = [headers.join(','), ...rows].join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `story-report-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  return (
+    <Box>
+      {/* Summary cards */}
+      <Grid container spacing={2} sx={{ mb: 3 }}>
+        {[
+          { label: 'Total Points', value: totalPoints, sub: `${filtered.length} stories`, color: 'primary.main' },
+          { label: 'Points Delivered', value: donePoints, sub: `${totalPoints > 0 ? Math.round((donePoints / totalPoints) * 100) : 0}% completion`, color: 'success.main' },
+          { label: 'Review / Testing', value: forQEPoints, sub: `${filtered.filter((s) => s.status === 'for_qe_testing').length} stories`, color: '#0891b2' },
+          { label: 'In Progress', value: inProgressPoints, sub: `${filtered.filter((s) => s.status === 'in_progress').length} stories`, color: 'warning.main' },
+        ].map((m) => (
+          <Grid item xs={12} sm={6} md={3} key={m.label}>
+            <Paper sx={{ p: 2.5, textAlign: 'center' }}>
+              <Typography variant="h4" fontWeight={800} sx={{ color: m.color }}>
+                {m.value}
+              </Typography>
+              <Typography variant="body2" color="text.secondary" fontWeight={500}>
+                {m.label}
+              </Typography>
+              <Typography variant="caption" color="text.disabled">
+                {m.sub}
+              </Typography>
+            </Paper>
+          </Grid>
+        ))}
+      </Grid>
+
+      {/* Filters */}
+      <Stack direction="row" spacing={1.5} sx={{ mb: 2 }} flexWrap="wrap" useFlexGap alignItems="center">
+        <TextField
+          label="From Date"
+          type="date"
+          size="small"
+          value={dateFrom}
+          onChange={(e) => setDateFrom(e.target.value)}
+          InputLabelProps={{ shrink: true }}
+          sx={{ minWidth: 150 }}
+        />
+        <TextField
+          label="To Date"
+          type="date"
+          size="small"
+          value={dateTo}
+          onChange={(e) => setDateTo(e.target.value)}
+          InputLabelProps={{ shrink: true }}
+          sx={{ minWidth: 150 }}
+        />
+        <FormControl size="small" sx={{ minWidth: 140 }}>
+          <InputLabel>Status</InputLabel>
+          <Select value={filterStatus} label="Status" onChange={(e) => setFilterStatus(e.target.value)}>
+            <MenuItem value="all">All Statuses</MenuItem>
+            {Object.entries(statusConfig).map(([k, v]) => (
+              <MenuItem key={k} value={k}>{v.label}</MenuItem>
+            ))}
+          </Select>
+        </FormControl>
+        <FormControl size="small" sx={{ minWidth: 160 }}>
+          <InputLabel>Assignee</InputLabel>
+          <Select value={filterAssignee} label="Assignee" onChange={(e) => setFilterAssignee(e.target.value)}>
+            <MenuItem value="all">All Assignees</MenuItem>
+            {developers.map((d) => <MenuItem key={d} value={d}>{d}</MenuItem>)}
+          </Select>
+        </FormControl>
+        <FormControl size="small" sx={{ minWidth: 160 }}>
+          <InputLabel>Team</InputLabel>
+          <Select value={filterTeamId} label="Team" onChange={(e) => { setFilterTeamId(e.target.value); setFilterSprintId('all'); }}>
+            <MenuItem value="all">All Teams</MenuItem>
+            {teams.map((t) => <MenuItem key={t.id} value={t.id}>{t.name}</MenuItem>)}
+          </Select>
+        </FormControl>
+        <FormControl size="small" sx={{ minWidth: 140 }}>
+          <InputLabel>Sprint</InputLabel>
+          <Select value={filterSprintId} label="Sprint" onChange={(e) => setFilterSprintId(e.target.value)}>
+            <MenuItem value="all">All Sprints</MenuItem>
+            {teamSprints.map((s) => <MenuItem key={s.id} value={s.id}>{s.name}</MenuItem>)}
+          </Select>
+        </FormControl>
+        {(dateFrom || dateTo || filterStatus !== 'all' || filterAssignee !== 'all' || filterTeamId !== 'all' || filterSprintId !== 'all') && (
+          <Button size="small" onClick={() => { setDateFrom(''); setDateTo(''); setFilterStatus('all'); setFilterAssignee('all'); setFilterTeamId('all'); setFilterSprintId('all'); }}>
+            Clear Filters
+          </Button>
+        )}
+        <Box sx={{ flexGrow: 1 }} />
+        <Tooltip title="Export to CSV">
+          <Button variant="outlined" size="small" startIcon={<DownloadIcon />} onClick={handleExportCSV}>
+            Export CSV
+          </Button>
+        </Tooltip>
+      </Stack>
+
+      {/* Story Report Table */}
+      <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 1 }}>
+        <Typography variant="subtitle1" fontWeight={700}>Story Report</Typography>
+        <Typography variant="body2" color="text.secondary">— {filtered.length} stories · {totalPoints} pts</Typography>
+      </Stack>
+      <TableContainer component={Paper} sx={{ mb: 3 }}>
+        <Table size="small">
+          <TableHead>
+            <TableRow sx={{ bgcolor: '#F8FAFC' }}>
+              {['ID', 'Title', 'Pts', 'Status', 'Reporter', 'Assignee', 'Sprint', 'Due Date', 'Created', 'Started', 'Completed'].map((h) => (
+                <TableCell key={h} sx={{ fontWeight: 600, fontSize: 12, color: '#64748b', whiteSpace: 'nowrap' }}>
+                  {h}
+                </TableCell>
+              ))}
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {filtered.map((story) => {
+              const sprint = sprints.find((s) => s.id === story.sprintId);
+              const team = teams.find((t) => t.id === story.teamId);
+              const today = new Date().toISOString().slice(0, 10);
+              const dueDate = story.dueDate ?? '';
+              const isOverdue = dueDate && dueDate < today && !story.completedDate;
+              return (
+                <TableRow
+                  key={story.id}
+                  hover
+                  sx={isOverdue ? { bgcolor: '#fff5f5' } : undefined}
+                >
+                  <TableCell>
+                    <Typography variant="caption" color="text.disabled" fontWeight={600} sx={{ whiteSpace: 'nowrap' }}>
+                      {story.id}
+                    </Typography>
+                  </TableCell>
+                  <TableCell sx={{ maxWidth: 220 }}>
+                    <Stack direction="row" alignItems="center" spacing={0.75}>
+                      <Typography variant="body2" fontWeight={500}>
+                        {story.title}
+                      </Typography>
+                      {isOverdue && (
+                        <Chip label="Overdue" size="small" sx={{ bgcolor: '#fee2e2', color: '#dc2626', fontWeight: 700, fontSize: 10, height: 18 }} />
+                      )}
+                    </Stack>
+                    {team && (
+                      <Typography variant="caption" color="text.disabled" display="block">
+                        {team.name}
+                      </Typography>
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    <Chip label={story.points} size="small" color="primary" variant="outlined" />
+                  </TableCell>
+                  <TableCell>
+                    <Chip
+                      label={statusConfig[story.status].label}
+                      size="small"
+                      color={statusConfig[story.status].color}
+                    />
+                  </TableCell>
+                  <TableCell>
+                    <Typography variant="body2">{story.reporter || '—'}</Typography>
+                  </TableCell>
+                  <TableCell>
+                    <Typography variant="body2" fontWeight={500}>{story.assignee || '—'}</Typography>
+                  </TableCell>
+                  <TableCell>
+                    <Typography variant="caption" color="text.secondary" sx={{ whiteSpace: 'nowrap' }}>
+                      {sprint?.name ?? '—'}
+                    </Typography>
+                  </TableCell>
+                  <TableCell>
+                    {dueDate ? (
+                      <Box sx={{
+                        display: 'inline-flex', alignItems: 'center', gap: 0.5,
+                        px: 1, py: 0.25, borderRadius: 1,
+                        bgcolor: isOverdue ? '#fee2e2' : 'transparent',
+                      }}>
+                        <Typography
+                          variant="caption"
+                          sx={{
+                            whiteSpace: 'nowrap',
+                            fontWeight: isOverdue ? 700 : 400,
+                            color: isOverdue ? '#dc2626' : 'text.secondary',
+                          }}
+                        >
+                          {dueDate}
+                        </Typography>
+                        {isOverdue && (
+                          <Typography variant="caption" sx={{ color: '#dc2626', fontWeight: 800 }}>!</Typography>
+                        )}
+                      </Box>
+                    ) : (
+                      <Typography variant="caption" color="text.disabled">—</Typography>
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    <Typography variant="caption" sx={{ whiteSpace: 'nowrap' }}>{story.createdDate || '—'}</Typography>
+                  </TableCell>
+                  <TableCell>
+                    <Typography variant="caption" sx={{ whiteSpace: 'nowrap' }}>{story.startedDate || '—'}</Typography>
+                  </TableCell>
+                  <TableCell>
+                    <Typography variant="caption" sx={{ whiteSpace: 'nowrap' }}>{story.completedDate || '—'}</Typography>
+                  </TableCell>
+                </TableRow>
+              );
+            })}
+            <TableRow sx={{ bgcolor: '#F8FAFC' }}>
+              <TableCell colSpan={2}>
+                <Typography variant="body2" fontWeight={700}>Total ({filtered.length} stories)</Typography>
+              </TableCell>
+              <TableCell>
+                <Typography variant="body2" fontWeight={800} color="primary">{totalPoints} pts</Typography>
+              </TableCell>
+              <TableCell colSpan={8} />
+            </TableRow>
+          </TableBody>
+        </Table>
+      </TableContainer>
+
+      {/* Points by Developer */}
+      <Typography variant="subtitle1" fontWeight={700} sx={{ mb: 1 }}>
+        Points by Developer
+      </Typography>
+      <TableContainer component={Paper}>
+        <Table size="small">
+          <TableHead>
+            <TableRow sx={{ bgcolor: '#F8FAFC' }}>
+              {['Developer', 'Stories', 'Total Pts', 'Delivered', 'For QE', 'In Progress', 'Delivery Rate'].map((h) => (
+                <TableCell key={h} sx={{ fontWeight: 600, fontSize: 12, color: '#64748b' }}>
+                  {h}
+                </TableCell>
+              ))}
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {byAssignee.map((row) => {
+              const rate = row.total > 0 ? Math.round((row.done / row.total) * 100) : 0;
+              return (
+                <TableRow key={row.dev} hover>
+                  <TableCell><Typography variant="body2" fontWeight={500}>{row.dev}</Typography></TableCell>
+                  <TableCell><Typography variant="body2">{row.count}</Typography></TableCell>
+                  <TableCell><Typography variant="body2" fontWeight={700}>{row.total}</Typography></TableCell>
+                  <TableCell><Typography variant="body2" fontWeight={700} color="success.main">{row.done}</Typography></TableCell>
+                  <TableCell><Typography variant="body2" fontWeight={700} sx={{ color: '#0891b2' }}>{row.forQE}</Typography></TableCell>
+                  <TableCell><Typography variant="body2" fontWeight={700} color="warning.main">{row.inProgress}</Typography></TableCell>
+                  <TableCell>
+                    <Chip label={`${rate}%`} size="small" color={rate >= 50 ? 'success' : rate >= 25 ? 'warning' : 'default'} />
+                  </TableCell>
+                </TableRow>
+              );
+            })}
+          </TableBody>
+        </Table>
+      </TableContainer>
+    </Box>
+  );
+}

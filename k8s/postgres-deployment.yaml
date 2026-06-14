@@ -1,0 +1,45 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: convergy-postgres
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: convergy-postgres
+  template:
+    metadata:
+      labels:
+        app: convergy-postgres
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:15-alpine
+          env:
+            - name: POSTGRES_DB
+              value: convergy
+            - name: POSTGRES_USER
+              value: convergy_user
+            - name: POSTGRES_PASSWORD
+              value: convergy_password
+          ports:
+            - containerPort: 5432
+          volumeMounts:
+            - name: postgres-data
+              mountPath: /var/lib/postgresql/data
+      volumes:
+        - name: postgres-data
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: convergy-postgres
+spec:
+  selector:
+    app: convergy-postgres
+  ports:
+    - port: 5432
+      targetPort: 5432
+      protocol: TCP
+      name: postgres

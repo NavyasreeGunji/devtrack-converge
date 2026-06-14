@@ -1,0 +1,319 @@
+import { useState, useEffect } from 'react';
+import {
+  Box,
+  Grid,
+  Paper,
+  Typography,
+  Chip,
+  Avatar,
+  List,
+  ListItem,
+  ListItemText,
+  ListItemAvatar,
+  Divider,
+} from '@mui/material';
+import AssignmentIcon from '@mui/icons-material/Assignment';
+import BugReportIcon from '@mui/icons-material/BugReport';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import AccessTimeIcon from '@mui/icons-material/AccessTime';
+import {
+  Story, Bug, DailyLog, Deployment, StoryStatus, DeploymentStatus,
+  initialStories, bugs as initialBugs, deployments as initialDeployments, dailyLogs as initialLogs,
+} from '../data/mockData';
+import { useApp } from '../context/AppContext';
+import { apiGetStories, apiGetBugs, apiGetLogs, apiGetDeployments } from '../api/api';
+
+const storyStatusColor: Record<StoryStatus, 'default' | 'primary' | 'warning' | 'success' | 'info'> = {
+  backlog: 'default',
+  to_do: 'default',
+  in_progress: 'primary',
+  in_review: 'warning',
+  for_qe_testing: 'info',
+  done: 'success',
+  on_hold: 'default',
+};
+
+const storyStatusLabel: Record<StoryStatus, string> = {
+  backlog: 'Backlog',
+  to_do: 'To Do',
+  in_progress: 'In Progress',
+  in_review: 'In Review',
+  for_qe_testing: 'Review / Testing',
+  done: 'Done',
+  on_hold: 'On Hold',
+};
+
+const deployStatusColor: Record<DeploymentStatus, 'success' | 'error' | 'primary' | 'warning' | 'default'> = {
+  planned: 'default',
+  success: 'success',
+  failed: 'error',
+  in_progress: 'primary',
+  rolled_back: 'warning',
+};
+
+const deployStatusLabel: Record<DeploymentStatus, string> = {
+  planned: 'Planned',
+  success: 'Success',
+  failed: 'Failed',
+  in_progress: 'In Progress',
+  rolled_back: 'Rolled Back',
+};
+
+export default function DashboardPage() {
+  const { backendOnline, backendChecked } = useApp();
+  const [stories, setStories] = useState<Story[]>([]);
+  const [bugs, setBugs] = useState<Bug[]>([]);
+  const [dailyLogs, setDailyLogs] = useState<DailyLog[]>([]);
+  const [deployments, setDeployments] = useState<Deployment[]>([]);
+
+  useEffect(() => {
+    if (!backendChecked) return;
+    if (backendOnline) {
+      apiGetStories().then(setStories).catch(() => setStories(initialStories));
+      apiGetBugs().then(setBugs).catch(() => setBugs(initialBugs));
+      apiGetLogs().then(setDailyLogs).catch(() => setDailyLogs(initialLogs));
+      apiGetDeployments().then(setDeployments).catch(() => setDeployments(initialDeployments));
+    } else {
+      setStories(initialStories);
+      setBugs(initialBugs);
+      setDailyLogs(initialLogs);
+      setDeployments(initialDeployments);
+    }
+  }, [backendChecked, backendOnline]);
+
+  const today = new Date().toISOString().slice(0, 10);
+  const totalPoints = stories.reduce((sum, s) => sum + s.points, 0);
+  const donePoints = stories.filter((s) => s.status === 'done').reduce((sum, s) => sum + s.points, 0);
+  const openBugs = bugs.filter((b) => b.status === 'open' || b.status === 'in_progress').length;
+  const criticalBugs = bugs.filter((b) => b.severity === 'critical' && b.status !== 'closed' && b.status !== 'resolved').length;
+  const todayLogs = dailyLogs.filter((l) => l.date === today);
+  const todayHours = todayLogs.reduce((sum, l) => sum + l.hours, 0);
+  const doneStories = stories.filter((s) => s.status === 'done').length;
+
+  const metrics = [
+    {
+      label: 'Total Story Points',
+      value: totalPoints,
+      sub: `${donePoints} pts delivered`,
+      icon: <AssignmentIcon />,
+      color: '#2563EB',
+    },
+    {
+      label: 'Active Bugs',
+      value: openBugs,
+      sub: `${criticalBugs} critical`,
+      icon: <BugReportIcon />,
+      color: '#dc2626',
+    },
+    {
+      label: 'Stories Completed',
+      value: doneStories,
+      sub: `of ${stories.length} total`,
+      icon: <CheckCircleIcon />,
+      color: '#16a34a',
+    },
+    {
+      label: 'Hours Logged Today',
+      value: todayHours,
+      sub: `by ${todayLogs.length} developers`,
+      icon: <AccessTimeIcon />,
+      color: '#7C3AED',
+    },
+  ];
+
+  const activeStories = stories.filter((s) => s.status !== 'done').slice(0, 5);
+  const openBugList = bugs.filter((b) => b.status === 'open' || b.status === 'in_progress');
+  const recentDeployments = [...deployments].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 4);
+
+  return (
+    <Box>
+      <Grid container spacing={2} sx={{ mb: 3 }}>
+        {metrics.map((m) => (
+          <Grid item xs={12} sm={6} md={3} key={m.label}>
+            <Paper sx={{ p: 2.5, display: 'flex', alignItems: 'center', gap: 2 }}>
+              <Avatar
+                sx={{
+                  bgcolor: m.color + '18',
+                  color: m.color,
+                  width: 50,
+                  height: 50,
+                }}
+              >
+                {m.icon}
+              </Avatar>
+              <Box>
+                <Typography variant="h5" fontWeight={700} lineHeight={1.2}>
+                  {m.value}
+                </Typography>
+                <Typography variant="body2" color="text.secondary" fontWeight={500}>
+                  {m.label}
+                </Typography>
+                <Typography variant="caption" color="text.disabled">
+                  {m.sub}
+                </Typography>
+              </Box>
+            </Paper>
+          </Grid>
+        ))}
+      </Grid>
+
+      <Grid container spacing={2}>
+        <Grid item xs={12} md={6}>
+          <Paper sx={{ p: 2.5 }}>
+            <Typography variant="subtitle1" fontWeight={700} gutterBottom>
+              Active Stories
+            </Typography>
+            <List dense disablePadding>
+              {activeStories.map((story, i) => (
+                <Box key={story.id}>
+                  {i > 0 && <Divider sx={{ my: 0.5 }} />}
+                  <ListItem disableGutters alignItems="flex-start" sx={{ py: 0.75 }}>
+                    <ListItemText
+                      primary={
+                        <Typography variant="body2" fontWeight={500}>
+                          {story.title}
+                        </Typography>
+                      }
+                      secondary={`${story.assignee} · Sprint ${story.sprintId}`}
+                    />
+                    <Box sx={{ display: 'flex', gap: 0.75, alignItems: 'center', mt: 0.25, flexShrink: 0 }}>
+                      <Chip label={`${story.points}pt`} size="small" variant="outlined" color="primary" />
+                      <Chip
+                        label={storyStatusLabel[story.status]}
+                        size="small"
+                        color={storyStatusColor[story.status]}
+                      />
+                    </Box>
+                  </ListItem>
+                </Box>
+              ))}
+            </List>
+          </Paper>
+        </Grid>
+
+        <Grid item xs={12} md={6}>
+          <Paper sx={{ p: 2.5 }}>
+            <Typography variant="subtitle1" fontWeight={700} gutterBottom>
+              Open Bugs
+            </Typography>
+            <List dense disablePadding>
+              {openBugList.map((bug, i) => (
+                <Box key={bug.id}>
+                  {i > 0 && <Divider sx={{ my: 0.5 }} />}
+                  <ListItem disableGutters alignItems="flex-start" sx={{ py: 0.75 }}>
+                    <ListItemText
+                      primary={
+                        <Typography variant="body2" fontWeight={500}>
+                          {bug.title}
+                        </Typography>
+                      }
+                      secondary={`${bug.assignee} · ${bug.environment}`}
+                    />
+                    <Chip
+                      label={bug.severity}
+                      size="small"
+                      color={
+                        bug.severity === 'critical'
+                          ? 'error'
+                          : bug.severity === 'high'
+                          ? 'warning'
+                          : 'default'
+                      }
+                      sx={{ flexShrink: 0, mt: 0.25 }}
+                    />
+                  </ListItem>
+                </Box>
+              ))}
+              {openBugList.length === 0 && (
+                <Typography variant="body2" color="text.secondary">
+                  No open bugs
+                </Typography>
+              )}
+            </List>
+          </Paper>
+        </Grid>
+
+        <Grid item xs={12} md={6}>
+          <Paper sx={{ p: 2.5 }}>
+            <Typography variant="subtitle1" fontWeight={700} gutterBottom>
+              Today's Activity
+            </Typography>
+            <List dense disablePadding>
+              {todayLogs.map((log, i) => (
+                <Box key={log.id}>
+                  {i > 0 && <Divider sx={{ my: 0.5 }} />}
+                  <ListItem disableGutters sx={{ py: 0.75 }}>
+                    <ListItemAvatar sx={{ minWidth: 42 }}>
+                      <Avatar
+                        sx={{
+                          width: 30,
+                          height: 30,
+                          fontSize: 11,
+                          fontWeight: 700,
+                          bgcolor: '#2563EB18',
+                          color: '#2563EB',
+                        }}
+                      >
+                        {log.developer.split(' ').map((n) => n[0]).join('')}
+                      </Avatar>
+                    </ListItemAvatar>
+                    <ListItemText
+                      primary={
+                        <Typography variant="body2" fontWeight={500}>
+                          {log.developer}
+                        </Typography>
+                      }
+                      secondary={log.description}
+                    />
+                    <Typography variant="body2" fontWeight={700} color="primary" sx={{ flexShrink: 0 }}>
+                      {log.hours}h
+                    </Typography>
+                  </ListItem>
+                </Box>
+              ))}
+              {todayLogs.length === 0 && (
+                <Typography variant="body2" color="text.secondary">
+                  No logs yet today
+                </Typography>
+              )}
+            </List>
+          </Paper>
+        </Grid>
+
+        <Grid item xs={12} md={6}>
+          <Paper sx={{ p: 2.5 }}>
+            <Typography variant="subtitle1" fontWeight={700} gutterBottom>
+              Recent Deployments
+            </Typography>
+            <List dense disablePadding>
+              {recentDeployments.map((dep, i) => (
+                <Box key={dep.id}>
+                  {i > 0 && <Divider sx={{ my: 0.5 }} />}
+                  <ListItem disableGutters alignItems="flex-start" sx={{ py: 0.75 }}>
+                    <ListItemText
+                      primary={
+                        <Typography variant="body2" fontWeight={600}>
+                          {dep.deployedBy}{' '}
+                          <Typography component="span" variant="caption" color="text.secondary">
+                            → {dep.environment}
+                          </Typography>
+                        </Typography>
+                      }
+                      secondary={`${dep.date} at ${dep.time}`}
+                    />
+                    <Chip
+                      label={deployStatusLabel[dep.status]}
+                      size="small"
+                      color={deployStatusColor[dep.status]}
+                      sx={{ flexShrink: 0, mt: 0.25 }}
+                    />
+                  </ListItem>
+                </Box>
+              ))}
+            </List>
+          </Paper>
+        </Grid>
+      </Grid>
+    </Box>
+  );
+}

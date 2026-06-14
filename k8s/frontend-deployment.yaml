@@ -1,0 +1,32 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: convergy-frontend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: convergy-frontend
+  template:
+    metadata:
+      labels:
+        app: convergy-frontend
+    spec:
+      containers:
+        - name: frontend
+          image: convergy/frontend:latest
+          ports:
+            - containerPort: 80
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: convergy-frontend
+spec:
+  selector:
+    app: convergy-frontend
+  ports:
+    - port: 80
+      targetPort: 80
+      protocol: TCP
+      name: http

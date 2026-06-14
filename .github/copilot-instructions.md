@@ -1,0 +1,5 @@
+- [x] Verify that the copilot-instructions.md file in the .github directory is created.
+- [ ] Scaffold the project structure for backend, frontend, and deployments.
+- [ ] Create initial docs for architecture, schema, and API contracts.
+- [ ] Add Docker and Kubernetes configuration.
+- [ ] Provide instructions for running the scaffold.

@@ -1,0 +1,39 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: convergy-backend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: convergy-backend
+  template:
+    metadata:
+      labels:
+        app: convergy-backend
+    spec:
+      containers:
+        - name: backend
+          image: convergy/backend:latest
+          ports:
+            - containerPort: 8080
+          env:
+            - name: SPRING_DATASOURCE_URL
+              value: jdbc:postgresql://convergy-postgres:5432/convergy
+            - name: SPRING_DATASOURCE_USERNAME
+              value: convergy_user
+            - name: SPRING_DATASOURCE_PASSWORD
+              value: convergy_password
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: convergy-backend
+spec:
+  selector:
+    app: convergy-backend
+  ports:
+    - port: 8080
+      targetPort: 8080
+      protocol: TCP
+      name: http

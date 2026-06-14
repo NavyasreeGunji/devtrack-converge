@@ -1,0 +1,152 @@
+import { ReactNode } from 'react';
+import {
+  Box,
+  Drawer,
+  List,
+  ListItem,
+  ListItemButton,
+  ListItemIcon,
+  ListItemText,
+  Typography,
+  Divider,
+  Avatar,
+  AppBar,
+  Toolbar,
+  Tooltip,
+  IconButton,
+} from '@mui/material';
+import DashboardIcon from '@mui/icons-material/Dashboard';
+import PeopleIcon from '@mui/icons-material/People';
+import GroupsIcon from '@mui/icons-material/Groups';
+import AssignmentIcon from '@mui/icons-material/Assignment';
+import EventNoteIcon from '@mui/icons-material/EventNote';
+import BugReportIcon from '@mui/icons-material/BugReport';
+import RocketLaunchIcon from '@mui/icons-material/RocketLaunch';
+import BarChartIcon from '@mui/icons-material/BarChart';
+import LogoutIcon from '@mui/icons-material/Logout';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { useApp } from '../context/AppContext';
+
+const DRAWER_WIDTH = 240;
+
+const navItems = [
+  { label: 'Dashboard', icon: <DashboardIcon />, path: '/' },
+  { label: 'People', icon: <PeopleIcon />, path: '/people' },
+  { label: 'Teams', icon: <GroupsIcon />, path: '/teams' },
+  { label: 'Stories', icon: <AssignmentIcon />, path: '/stories' },
+  { label: 'Daily Log', icon: <EventNoteIcon />, path: '/daily-log' },
+  { label: 'Bugs & Issues', icon: <BugReportIcon />, path: '/bugs' },
+  { label: 'Deployments', icon: <RocketLaunchIcon />, path: '/deployments' },
+  { label: 'Reports', icon: <BarChartIcon />, path: '/reports' },
+];
+
+function avatarColor(name: string) {
+  const colors = ['#2563EB', '#7C3AED', '#16a34a', '#d97706', '#dc2626', '#0891b2', '#be185d'];
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
+  return colors[Math.abs(hash) % colors.length];
+}
+
+export default function MainLayout({ children }: { children: ReactNode }) {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const { currentUser, logout } = useApp();
+  const activePage = navItems.find((item) => item.path === location.pathname)?.label ?? 'Dashboard';
+  const userInitials = currentUser ? currentUser.name.split(' ').map((n) => n[0]).join('').slice(0, 2).toUpperCase() : '?';
+
+  return (
+    <Box sx={{ display: 'flex', minHeight: '100vh', bgcolor: '#F1F5F9' }}>
+      <Drawer
+        variant="permanent"
+        sx={{
+          width: DRAWER_WIDTH,
+          flexShrink: 0,
+          '& .MuiDrawer-paper': {
+            width: DRAWER_WIDTH,
+            boxSizing: 'border-box',
+            bgcolor: '#1e293b',
+            color: 'white',
+            borderRight: 'none',
+          },
+        }}
+      >
+        <Box sx={{ p: 3, pb: 2 }}>
+          <Typography variant="h6" fontWeight={700} color="white" letterSpacing={0.5}>
+            DevTrack
+          </Typography>
+          <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.45)' }}>
+            Engineering Portal
+          </Typography>
+        </Box>
+
+        <Divider sx={{ borderColor: 'rgba(255,255,255,0.08)' }} />
+
+        <List sx={{ px: 1.5, py: 1.5, flexGrow: 1 }}>
+          {navItems.map((item) => {
+            const isActive = location.pathname === item.path;
+            return (
+              <ListItem key={item.label} disablePadding sx={{ mb: 0.5 }}>
+                <ListItemButton
+                  onClick={() => navigate(item.path)}
+                  sx={{
+                    borderRadius: 2,
+                    color: isActive ? 'white' : 'rgba(255,255,255,0.55)',
+                    bgcolor: isActive ? 'rgba(255,255,255,0.1)' : 'transparent',
+                    '&:hover': { bgcolor: 'rgba(255,255,255,0.07)', color: 'white' },
+                  }}
+                >
+                  <ListItemIcon sx={{ color: 'inherit', minWidth: 38 }}>
+                    {item.icon}
+                  </ListItemIcon>
+                  <ListItemText
+                    primary={item.label}
+                    primaryTypographyProps={{ fontSize: 13.5, fontWeight: isActive ? 600 : 400 }}
+                  />
+                </ListItemButton>
+              </ListItem>
+            );
+          })}
+        </List>
+
+        <Divider sx={{ borderColor: 'rgba(255,255,255,0.08)' }} />
+
+        <Box sx={{ p: 2, display: 'flex', alignItems: 'center', gap: 1.5 }}>
+          <Avatar sx={{ width: 34, height: 34, fontSize: 13, bgcolor: currentUser ? avatarColor(currentUser.name) : '#2563EB', fontWeight: 600 }}>
+            {userInitials}
+          </Avatar>
+          <Box sx={{ flexGrow: 1, minWidth: 0 }}>
+            <Typography variant="body2" fontWeight={600} color="white" fontSize={13} noWrap>
+              {currentUser?.name ?? ''}
+            </Typography>
+            <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.4)' }}>
+              {currentUser?.role ?? ''}
+            </Typography>
+          </Box>
+          <Tooltip title="Switch user">
+            <IconButton size="small" onClick={logout} sx={{ color: 'rgba(255,255,255,0.4)', '&:hover': { color: 'white' } }}>
+              <LogoutIcon fontSize="small" />
+            </IconButton>
+          </Tooltip>
+        </Box>
+      </Drawer>
+
+      <Box sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+        <AppBar
+          position="sticky"
+          elevation={0}
+          sx={{ bgcolor: 'white', borderBottom: '1px solid #E2E8F0', color: 'inherit' }}
+        >
+          <Toolbar>
+            <Typography variant="h6" fontWeight={600} sx={{ color: '#1e293b', fontSize: 17 }}>
+              {activePage}
+            </Typography>
+          </Toolbar>
+        </AppBar>
+
+        <Box sx={{ flexGrow: 1, p: 3 }}>
+          {children}
+        </Box>
+      </Box>
+    </Box>
+  );
+}
