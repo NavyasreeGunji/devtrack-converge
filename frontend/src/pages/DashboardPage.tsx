@@ -13,7 +13,7 @@ import {
   Divider,
 } from '@mui/material';
 import AssignmentIcon from '@mui/icons-material/Assignment';
-import BugReportIcon from '@mui/icons-material/BugReport';
+import RocketLaunchIcon from '@mui/icons-material/RocketLaunch';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
 import {
@@ -84,6 +84,7 @@ export default function DashboardPage() {
   const today = new Date().toISOString().slice(0, 10);
   const totalPoints = stories.reduce((sum, s) => sum + s.points, 0);
   const donePoints = stories.filter((s) => s.status === 'done').reduce((sum, s) => sum + s.points, 0);
+  const successfulDeploys = deployments.filter((d) => d.status === 'success').length;
   const openBugs = bugs.filter((b) => b.status === 'open' || b.status === 'in_progress').length;
   const criticalBugs = bugs.filter((b) => b.severity === 'critical' && b.status !== 'closed' && b.status !== 'resolved').length;
   const todayLogs = dailyLogs.filter((l) => l.date === today);
@@ -100,11 +101,11 @@ export default function DashboardPage() {
       color: '#2563EB',
     },
     {
-      label: 'Active Bugs',
-      value: openBugs,
-      sub: `${criticalBugs} critical`,
-      icon: <BugReportIcon />,
-      color: '#dc2626',
+      label: 'Deployments',
+      value: deployments.length,
+      sub: `${successfulDeploys} successful`,
+      icon: <RocketLaunchIcon />,
+      color: '#0891b2',
     },
     {
       label: 'Stories Completed',
