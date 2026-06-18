@@ -4,7 +4,7 @@ import {
   initialTeams, initialSprints, initialDeveloperProfiles,
 } from '../data/mockData';
 import {
-  apiLogin, apiGetDevelopers, apiCreateDeveloper, apiUpdateDeveloper,
+  apiLogin, apiGetDevelopers, apiCreateDeveloper, apiUpdateDeveloper, apiDeleteDeveloper,
   apiGetTeams, apiCreateTeam, apiUpdateTeam,
   apiGetSprints, apiCreateSprint, apiUpdateSprint,
 } from '../api/api';
@@ -29,6 +29,7 @@ interface AppContextType {
   updateSprint: (sprint: Sprint) => Promise<void>;
   addDeveloper: (dev: DeveloperProfile) => Promise<void>;
   updateDeveloper: (dev: DeveloperProfile) => Promise<void>;
+  deleteDeveloper: (id: string) => Promise<void>;
 }
 
 const AppContext = createContext<AppContextType>({} as AppContextType);
@@ -176,11 +177,25 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const deleteDeveloper = async (id: string) => {
+    const dev = developerProfiles.find((d) => d.id === id);
+    if (backendOnline) {
+      await apiDeleteDeveloper(id);
+    }
+    setDeveloperProfiles((prev) => prev.filter((d) => d.id !== id));
+    if (dev) {
+      const affected = teams.filter((t) => t.members.includes(dev.name));
+      for (const team of affected) {
+        await updateTeam({ ...team, members: team.members.filter((m) => m !== dev.name) });
+      }
+    }
+  };
+
   return (
     <AppContext.Provider value={{
       teams, sprints, developerProfiles, currentUser, backendOnline, backendChecked, backendWaking,
       login, logout, addTeam, updateTeam, addSprint, updateSprint,
-      addDeveloper, updateDeveloper,
+      addDeveloper, updateDeveloper, deleteDeveloper,
     }}>
       {children}
     </AppContext.Provider>

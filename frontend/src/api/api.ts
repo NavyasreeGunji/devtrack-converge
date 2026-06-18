@@ -219,6 +219,16 @@ export const apiCreateDeveloper = (d: Omit<DeveloperProfile, 'id'>) =>
   req<any>('/developers', { method: 'POST', body: JSON.stringify(unmapDeveloper(d)) }).then(mapDeveloper);
 export const apiUpdateDeveloper = (id: string, d: Omit<DeveloperProfile, 'id'>) =>
   req<any>(`/developers/${id}`, { method: 'PUT', body: JSON.stringify(unmapDeveloper(d)) }).then(mapDeveloper);
+export const apiDeleteDeveloper = async (id: string): Promise<void> => {
+  const res = await fetch(`${BASE}/developers/${id}`, {
+    method: 'DELETE',
+    headers: { 'Content-Type': 'application/json' },
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ error: res.statusText }));
+    throw new Error(err.message ?? err.error ?? res.statusText);
+  }
+};
 
 // ─── Teams ───────────────────────────────────────────────────────────────────
 

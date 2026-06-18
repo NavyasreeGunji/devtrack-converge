@@ -300,7 +300,7 @@ export default function StoriesPage() {
 
         <Box sx={{ flexGrow: 1 }} />
         <Button variant="contained" startIcon={<AddIcon />} onClick={openAdd}
-          disabled={viewBy === 'sprint' && (selectedTeamId === 'all' || !resolvedSprintId) && viewBy !== 'all'}>
+          disabled={viewBy === 'sprint' && (selectedTeamId === 'all' || !resolvedSprintId)}>
           Add Story
         </Button>
       </Stack>

@@ -76,6 +76,13 @@ function SprintCard({ sprint, onEdit, storyCount, points }: {
   );
 }
 
+const avatarColors = ['#2563EB', '#7C3AED', '#16a34a', '#d97706', '#dc2626', '#0891b2', '#be185d'];
+function getAvatarColor(name: string) {
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) hash += name.charCodeAt(i);
+  return avatarColors[hash % avatarColors.length];
+}
+
 const emptyTeamForm = { name: '', description: '', members: [] as string[] };
 const emptySprintForm = { name: '', startDate: '', endDate: '', status: 'planned' as SprintStatus, goal: '' };
 
@@ -271,7 +278,7 @@ export default function TeamsPage() {
                 {team.members.map((m) => (
                   <Chip
                     key={m}
-                    avatar={<Avatar sx={{ fontSize: 10, fontWeight: 700 }}>{initials(m)}</Avatar>}
+                    avatar={<Avatar sx={{ fontSize: 10, fontWeight: 700, bgcolor: getAvatarColor(m), color: '#fff' }}>{initials(m)}</Avatar>}
                     label={m}
                     size="small"
                     variant="outlined"

@@ -39,4 +39,11 @@ public class DeveloperController {
         developer.setId(id);
         return ResponseEntity.ok(repository.save(developer));
     }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> delete(@PathVariable("id") Long id) {
+        if (!repository.existsById(id)) return ResponseEntity.notFound().build();
+        repository.deleteById(id);
+        return ResponseEntity.noContent().build();
+    }
 }

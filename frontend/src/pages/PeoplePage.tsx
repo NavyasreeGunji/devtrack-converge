@@ -22,6 +22,7 @@ import {
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
+import DeleteIcon from '@mui/icons-material/Delete';
 import EmailIcon from '@mui/icons-material/Email';
 import { DeveloperProfile, DeveloperRole, ProjectType } from '../data/mockData';
 import { useApp } from '../context/AppContext';
@@ -89,10 +90,11 @@ function isValidName(name: string): boolean {
 }
 
 export default function PeoplePage() {
-  const { teams, developerProfiles, currentUser, addDeveloper, updateDeveloper, updateTeam } = useApp();
+  const { teams, developerProfiles, currentUser, addDeveloper, updateDeveloper, updateTeam, deleteDeveloper } = useApp();
 
   const PRIVILEGED_ROLES: DeveloperRole[] = ['Manager', 'Associate Manager', 'Delivery Manager', 'Technical Manager', 'Tech Lead', 'HR', 'Sprint Master'];
   const canEditAll = currentUser ? PRIVILEGED_ROLES.includes(currentUser.role) : false;
+  const canDelete = currentUser?.role === 'Manager';
   const canEdit = (dev: DeveloperProfile) => canEditAll || currentUser?.id === dev.id;
   const [filterRole, setFilterRole] = useState('all');
   const [filterTeam, setFilterTeam] = useState('all');
@@ -102,6 +104,8 @@ export default function PeoplePage() {
   const [isSaving, setIsSaving] = useState(false);
   const [emailError, setEmailError] = useState('');
   const [nameError, setNameError] = useState('');
+  const [deleteTarget, setDeleteTarget] = useState<DeveloperProfile | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const displayed = developerProfiles
     .filter((d) => filterRole === 'all' || d.role === filterRole)
@@ -207,6 +211,17 @@ export default function PeoplePage() {
     }
   };
 
+  const handleDelete = async () => {
+    if (!deleteTarget) return;
+    setIsDeleting(true);
+    try {
+      await deleteDeveloper(deleteTarget.id);
+      setDeleteTarget(null);
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   const toggleTeam = (teamId: string) => {
     setForm((f) => ({
       ...f,
@@ -277,12 +292,30 @@ export default function PeoplePage() {
                     size="small"
                     onClick={() => openEdit(dev)}
                     sx={{
-                      position: 'absolute', top: 12, right: 12,
+                      position: 'absolute', top: 12,
+                      right: canDelete && currentUser?.id !== dev.id ? 40 : 8,
                       opacity: currentUser?.id === dev.id ? 0.6 : 0,
                       transition: 'opacity 0.15s',
                     }}
                   >
                     <EditIcon fontSize="small" />
+                  </IconButton>
+                </Tooltip>
+                )}
+                {canDelete && currentUser?.id !== dev.id && (
+                <Tooltip title="Remove developer">
+                  <IconButton
+                    className="edit-btn"
+                    size="small"
+                    onClick={() => setDeleteTarget(dev)}
+                    sx={{
+                      position: 'absolute', top: 12, right: 8,
+                      opacity: 0,
+                      transition: 'opacity 0.15s',
+                      color: '#dc2626',
+                    }}
+                  >
+                    <DeleteIcon fontSize="small" />
                   </IconButton>
                 </Tooltip>
                 )}
@@ -332,6 +365,28 @@ export default function PeoplePage() {
           );
         })}
       </Grid>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={!!deleteTarget} onClose={() => setDeleteTarget(null)} maxWidth="xs" fullWidth>
+        <DialogTitle>Remove Developer</DialogTitle>
+        <DialogContent>
+          <Typography>
+            Are you sure you want to remove <strong>{deleteTarget?.name}</strong>? They will be removed from all teams.
+            Historical data (stories, logs, deployments) will remain intact.
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setDeleteTarget(null)}>Cancel</Button>
+          <Button
+            variant="contained"
+            color="error"
+            onClick={handleDelete}
+            disabled={isDeleting}
+          >
+            {isDeleting ? 'Removing…' : 'Remove'}
+          </Button>
+        </DialogActions>
+      </Dialog>
 
       <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)} maxWidth="sm" fullWidth>
         <DialogTitle>{editTarget ? 'Edit Developer' : 'Add Developer'}</DialogTitle>
