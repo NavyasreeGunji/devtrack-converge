@@ -36,7 +36,7 @@ import {
 import { useApp } from '../context/AppContext';
 import { apiGetLogs, apiCreateLog, apiGetStories } from '../api/api';
 
-type FilterPeriod = 'today' | 'week' | 'month' | 'all';
+type FilterPeriod = 'today' | 'week' | 'custom';
 
 const today = new Date().toISOString().slice(0, 10);
 
@@ -48,27 +48,6 @@ function getWeekRange(): [string, string] {
   const sun = new Date(mon);
   sun.setDate(mon.getDate() + 6);
   return [mon.toISOString().slice(0, 10), sun.toISOString().slice(0, 10)];
-}
-
-function getMonthRange(): [string, string] {
-  const now = new Date();
-  const first = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().slice(0, 10);
-  const last = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().slice(0, 10);
-  return [first, last];
-}
-
-function inPeriod(date: string, period: FilterPeriod): boolean {
-  if (period === 'all') return true;
-  if (period === 'today') return date === today;
-  if (period === 'week') {
-    const [mon, sun] = getWeekRange();
-    return date >= mon && date <= sun;
-  }
-  if (period === 'month') {
-    const [first, last] = getMonthRange();
-    return date >= first && date <= last;
-  }
-  return true;
 }
 
 const emptyForm = (): Omit<DailyLog, 'id'> => ({
@@ -97,8 +76,11 @@ export default function DailyLogPage() {
   }, [backendChecked, backendOnline]);
 
   const navDeveloper = (location.state as any)?.developer ?? null;
+  const navPeriod: FilterPeriod = (location.state as any)?.period ?? 'today';
   const [filterDev, setFilterDev] = useState(navDeveloper ?? currentUser?.name ?? 'all');
-  const [filterPeriod, setFilterPeriod] = useState<FilterPeriod>('today');
+  const [filterPeriod, setFilterPeriod] = useState<FilterPeriod>(navPeriod);
+  const [fromDate, setFromDate] = useState('');
+  const [toDate, setToDate] = useState('');
   const [dialogOpen, setDialogOpen] = useState(false);
   const [saveError, setSaveError] = useState('');
   const [isSaving, setIsSaving] = useState(false);
@@ -116,7 +98,18 @@ export default function DailyLogPage() {
 
   const filtered = logs
     .filter((l) => filterDev === 'all' || l.developer === filterDev)
-    .filter((l) => inPeriod(l.date, filterPeriod))
+    .filter((l) => {
+      if (filterPeriod === 'today') return l.date === today;
+      if (filterPeriod === 'week') {
+        const [mon, sun] = getWeekRange();
+        return l.date >= mon && l.date <= sun;
+      }
+      // custom range
+      if (fromDate && toDate) return l.date >= fromDate && l.date <= toDate;
+      if (fromDate) return l.date >= fromDate;
+      if (toDate) return l.date <= toDate;
+      return true;
+    })
     .sort((a, b) => b.date.localeCompare(a.date) || a.developer.localeCompare(b.developer));
 
   const totalHours = filtered.reduce((sum, l) => sum + l.hours, 0);
@@ -161,16 +154,35 @@ export default function DailyLogPage() {
         </FormControl>
 
         <ToggleButtonGroup
-          value={filterPeriod}
+          value={filterPeriod === 'custom' ? null : filterPeriod}
           exclusive
-          onChange={(_, val) => { if (val) setFilterPeriod(val); }}
+          onChange={(_, val) => {
+            if (val) { setFilterPeriod(val); setFromDate(''); setToDate(''); }
+          }}
           size="small"
         >
           <ToggleButton value="today">Today</ToggleButton>
           <ToggleButton value="week">This Week</ToggleButton>
-          <ToggleButton value="month">This Month</ToggleButton>
-          <ToggleButton value="all">All</ToggleButton>
         </ToggleButtonGroup>
+
+        <TextField
+          label="From"
+          type="date"
+          size="small"
+          value={fromDate}
+          onChange={(e) => { setFromDate(e.target.value); setFilterPeriod('custom'); }}
+          InputLabelProps={{ shrink: true }}
+          sx={{ width: 145 }}
+        />
+        <TextField
+          label="To"
+          type="date"
+          size="small"
+          value={toDate}
+          onChange={(e) => { setToDate(e.target.value); setFilterPeriod('custom'); }}
+          InputLabelProps={{ shrink: true }}
+          sx={{ width: 145 }}
+        />
 
         <Typography variant="body2" color="text.secondary">
           {filtered.length} entries · {totalHours}h total

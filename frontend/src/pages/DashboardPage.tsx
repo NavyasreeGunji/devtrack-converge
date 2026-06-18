@@ -132,33 +132,29 @@ export default function DashboardPage() {
   return (
     <Box>
       <Grid container spacing={2} sx={{ mb: 3 }}>
-        {metrics.map((m) => (
-          <Grid item xs={12} sm={6} md={3} key={m.label}>
-            <Paper sx={{ p: 2.5, display: 'flex', alignItems: 'center', gap: 2 }}>
-              <Avatar
+        {metrics.map((m) => {
+          const isHours = m.label === 'Hours Logged Today';
+          return (
+            <Grid item xs={12} sm={6} md={3} key={m.label}>
+              <Paper
+                onClick={isHours ? () => navigate('/daily-log', { state: { developer: 'all', period: 'today' } }) : undefined}
                 sx={{
-                  bgcolor: m.color + '18',
-                  color: m.color,
-                  width: 50,
-                  height: 50,
+                  p: 2.5, display: 'flex', alignItems: 'center', gap: 2,
+                  ...(isHours && { cursor: 'pointer', '&:hover': { boxShadow: 4, bgcolor: '#FAFBFF' } }),
                 }}
               >
-                {m.icon}
-              </Avatar>
-              <Box>
-                <Typography variant="h5" fontWeight={700} lineHeight={1.2}>
-                  {m.value}
-                </Typography>
-                <Typography variant="body2" color="text.secondary" fontWeight={500}>
-                  {m.label}
-                </Typography>
-                <Typography variant="caption" color="text.disabled">
-                  {m.sub}
-                </Typography>
-              </Box>
-            </Paper>
-          </Grid>
-        ))}
+                <Avatar sx={{ bgcolor: m.color + '18', color: m.color, width: 50, height: 50 }}>
+                  {m.icon}
+                </Avatar>
+                <Box>
+                  <Typography variant="h5" fontWeight={700} lineHeight={1.2}>{m.value}</Typography>
+                  <Typography variant="body2" color="text.secondary" fontWeight={500}>{m.label}</Typography>
+                  <Typography variant="caption" color="text.disabled">{m.sub}</Typography>
+                </Box>
+              </Paper>
+            </Grid>
+          );
+        })}
       </Grid>
 
       <Grid container spacing={2}>
