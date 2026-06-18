@@ -206,7 +206,10 @@ export default function TeamsPage() {
   const getPoints = (sprintId: string) =>
     initialStories.filter((s) => s.sprintId === sprintId).reduce((sum, s) => sum + s.points, 0);
 
-  const initials = (name: string) => name.split(' ').map((n) => n[0]).join('');
+  const initials = (name: string) => {
+    const parts = name.trim().split(' ');
+    return (parts[0][0] + (parts.length > 1 ? parts[parts.length - 1][0] : '')).toUpperCase();
+  };
 
   return (
     <Box>
@@ -271,19 +274,37 @@ export default function TeamsPage() {
 
             <AccordionDetails sx={{ px: 2.5, pb: 2.5 }}>
               {/* Members */}
-              <Stack direction="row" spacing={1} sx={{ mb: 2.5 }} flexWrap="wrap">
+              <Stack direction="row" spacing={1} sx={{ mb: 2.5 }} flexWrap="wrap" useFlexGap>
                 <Typography variant="caption" color="text.secondary" sx={{ alignSelf: 'center', mr: 0.5 }}>
                   Members:
                 </Typography>
-                {team.members.map((m) => (
-                  <Chip
-                    key={m}
-                    avatar={<Avatar sx={{ fontSize: 10, fontWeight: 700, bgcolor: getAvatarColor(m), color: '#fff' }}>{initials(m)}</Avatar>}
-                    label={m}
-                    size="small"
-                    variant="outlined"
-                  />
-                ))}
+                {team.members.map((m) => {
+                  const color = getAvatarColor(m);
+                  return (
+                    <Box
+                      key={m}
+                      sx={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 0.75,
+                        border: '1px solid',
+                        borderColor: `${color}50`,
+                        borderRadius: 99,
+                        pl: 0.5,
+                        pr: 1.5,
+                        py: 0.4,
+                        bgcolor: `${color}12`,
+                      }}
+                    >
+                      <Avatar sx={{ width: 22, height: 22, fontSize: 10, fontWeight: 700, bgcolor: color, color: '#fff' }}>
+                        {initials(m)}
+                      </Avatar>
+                      <Typography variant="caption" fontWeight={600} sx={{ color, lineHeight: 1 }}>
+                        {m}
+                      </Typography>
+                    </Box>
+                  );
+                })}
               </Stack>
 
               <Divider sx={{ mb: 2 }} />

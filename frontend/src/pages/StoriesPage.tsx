@@ -115,6 +115,9 @@ export default function StoriesPage() {
 
   const [filterStatus, setFilterStatus] = useState('all');
   const [filterAssignee, setFilterAssignee] = useState('all');
+  const [filterSprint, setFilterSprint] = useState('all');
+  const [filterFromDate, setFilterFromDate] = useState('');
+  const [filterToDate, setFilterToDate] = useState('');
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editTarget, setEditTarget] = useState<Story | null>(null);
   const [form, setForm] = useState<Omit<Story, 'id'>>(emptyForm());
@@ -155,8 +158,11 @@ export default function StoriesPage() {
     () =>
       baseFiltered
         .filter((s) => filterStatus === 'all' || s.status === filterStatus)
-        .filter((s) => filterAssignee === 'all' || s.assignee === filterAssignee),
-    [baseFiltered, filterStatus, filterAssignee]
+        .filter((s) => filterAssignee === 'all' || s.assignee === filterAssignee)
+        .filter((s) => filterSprint === 'all' || s.sprintId === filterSprint)
+        .filter((s) => !filterFromDate || s.createdDate >= filterFromDate)
+        .filter((s) => !filterToDate || s.createdDate <= filterToDate),
+    [baseFiltered, filterStatus, filterAssignee, filterSprint, filterFromDate, filterToDate]
   );
 
   const summary = useMemo(() => {
@@ -372,7 +378,7 @@ export default function StoriesPage() {
       </Paper>
 
       {/* Filters */}
-      <Stack direction="row" spacing={2} sx={{ mb: 2 }} alignItems="center">
+      <Stack direction="row" spacing={2} sx={{ mb: 2 }} alignItems="center" flexWrap="wrap" useFlexGap>
         <FormControl size="small" sx={{ minWidth: 140 }}>
           <InputLabel>Status</InputLabel>
           <Select value={filterStatus} label="Status" onChange={(e) => setFilterStatus(e.target.value)}>
@@ -387,6 +393,38 @@ export default function StoriesPage() {
             {developerProfiles.map((d) => <MenuItem key={d.id} value={d.name}>{d.name}</MenuItem>)}
           </Select>
         </FormControl>
+        <FormControl size="small" sx={{ minWidth: 180 }}>
+          <InputLabel>Sprint</InputLabel>
+          <Select value={filterSprint} label="Sprint" onChange={(e) => setFilterSprint(e.target.value)}>
+            <MenuItem value="all">All Sprints</MenuItem>
+            {sprints.map((sp) => {
+              const team = teams.find((t) => t.id === sp.teamId);
+              return (
+                <MenuItem key={sp.id} value={sp.id}>
+                  {sp.name}{team ? ` (${team.name})` : ''}
+                </MenuItem>
+              );
+            })}
+          </Select>
+        </FormControl>
+        <Stack direction="row" spacing={1} alignItems="center">
+          <Typography variant="caption" color="text.secondary" sx={{ whiteSpace: 'nowrap' }}>From</Typography>
+          <TextField
+            type="date"
+            size="small"
+            value={filterFromDate}
+            onChange={(e) => setFilterFromDate(e.target.value)}
+            sx={{ width: 140 }}
+          />
+          <Typography variant="caption" color="text.secondary">To</Typography>
+          <TextField
+            type="date"
+            size="small"
+            value={filterToDate}
+            onChange={(e) => setFilterToDate(e.target.value)}
+            sx={{ width: 140 }}
+          />
+        </Stack>
         <Typography variant="body2" color="text.secondary">
           Showing {filtered.length} of {baseFiltered.length} stories
         </Typography>
