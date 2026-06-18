@@ -115,7 +115,7 @@ export default function StoriesPage() {
     return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
   });
 
-  const [filterStatus, setFilterStatus] = useState('active_work');
+  const [filterStatus, setFilterStatus] = useState('all');
   const [filterAssignee, setFilterAssignee] = useState('all');
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editTarget, setEditTarget] = useState<Story | null>(null);
@@ -160,11 +160,7 @@ export default function StoriesPage() {
   const filtered = useMemo(
     () =>
       baseFiltered
-        .filter((s) => {
-          if (filterStatus === 'all') return true;
-          if (filterStatus === 'active_work') return s.status === 'in_progress' || s.status === 'to_do';
-          return s.status === filterStatus;
-        })
+        .filter((s) => filterStatus === 'all' || s.status === filterStatus)
         .filter((s) => filterAssignee === 'all' || s.assignee === filterAssignee),
     [baseFiltered, filterStatus, filterAssignee]
   );
@@ -374,7 +370,6 @@ export default function StoriesPage() {
           <InputLabel>Status</InputLabel>
           <Select value={filterStatus} label="Status" onChange={(e) => setFilterStatus(e.target.value)}>
             <MenuItem value="all">All Statuses</MenuItem>
-            <MenuItem value="active_work">In Progress / Planned</MenuItem>
             {statusOptions.map((o) => <MenuItem key={o.value} value={o.value}>{o.label}</MenuItem>)}
           </Select>
         </FormControl>
