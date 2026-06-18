@@ -32,7 +32,7 @@ import EditIcon from '@mui/icons-material/Edit';
 import Alert from '@mui/material/Alert';
 import ScheduleIcon from '@mui/icons-material/Schedule';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
-import { Deployment, deployments as initialDeployments, developers, DeploymentStatus } from '../data/mockData';
+import { Deployment, deployments as initialDeployments, DeploymentStatus } from '../data/mockData';
 import { useApp } from '../context/AppContext';
 import { apiGetDeployments, apiCreateDeployment, apiUpdateDeployment } from '../api/api';
 
@@ -59,7 +59,7 @@ const emptyForm = (): Omit<Deployment, 'id'> => ({
 });
 
 export default function DeploymentsPage() {
-  const { backendOnline, backendChecked } = useApp();
+  const { developerProfiles, backendOnline, backendChecked } = useApp();
   const [deployments, setDeployments] = useState<Deployment[]>([]);
 
   useEffect(() => {
@@ -75,6 +75,7 @@ export default function DeploymentsPage() {
   const [editTarget, setEditTarget] = useState<Deployment | null>(null);
   const [form, setForm] = useState<Omit<Deployment, 'id'>>(emptyForm());
   const [saveError, setSaveError] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
 
   const upcoming = deployments
     .filter((d) => UPCOMING_STATUSES.includes(d.status))
@@ -100,6 +101,7 @@ export default function DeploymentsPage() {
 
   const handleSave = async () => {
     setSaveError('');
+    setIsSaving(true);
     try {
       if (backendOnline) {
         if (editTarget) {
@@ -120,6 +122,8 @@ export default function DeploymentsPage() {
       setDialogOpen(false);
     } catch (err: any) {
       setSaveError(err?.message ?? 'Save failed. Check the backend is running and try again.');
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -385,15 +389,15 @@ export default function DeploymentsPage() {
               />
             </Stack>
             <Stack direction="row" spacing={2}>
-              <FormControl size="small" fullWidth>
-                <InputLabel>Deployed By</InputLabel>
+              <FormControl size="small" fullWidth required>
+                <InputLabel required>Deployed By</InputLabel>
                 <Select
                   value={form.deployedBy}
                   label="Deployed By"
                   onChange={(e) => setForm((f) => ({ ...f, deployedBy: e.target.value }))}
                 >
-                  {developers.map((d) => (
-                    <MenuItem key={d} value={d}>{d}</MenuItem>
+                  {developerProfiles.map((d) => (
+                    <MenuItem key={d.id} value={d.name}>{d.name}</MenuItem>
                   ))}
                 </Select>
               </FormControl>
@@ -419,6 +423,7 @@ export default function DeploymentsPage() {
               multiline
               rows={3}
               placeholder="What is being deployed? Any risks, steps, or notes for the team?"
+              required
             />
             <TextField
               label="Short Notes (optional)"
@@ -446,9 +451,9 @@ export default function DeploymentsPage() {
           <Button
             variant="contained"
             onClick={handleSave}
-            disabled={!form.deployedBy || !form.description}
+            disabled={isSaving || !form.deployedBy || !form.description}
           >
-            Save
+            {isSaving ? 'Saving…' : 'Save'}
           </Button>
         </DialogActions>
       </Dialog>

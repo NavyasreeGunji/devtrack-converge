@@ -48,11 +48,14 @@ export default function TeamsPage() {
   const [teamDialog, setTeamDialog] = useState(false);
   const [editTeam, setEditTeam] = useState<Team | null>(null);
   const [teamForm, setTeamForm] = useState(emptyTeamForm);
+  const [isSavingTeam, setIsSavingTeam] = useState(false);
 
   const [sprintDialog, setSprintDialog] = useState(false);
   const [sprintTeamId, setSprintTeamId] = useState('');
   const [editSprint, setEditSprint] = useState<Sprint | null>(null);
   const [sprintForm, setSprintForm] = useState(emptySprintForm);
+  const [isSavingSprint, setIsSavingSprint] = useState(false);
+  const [sprintDateError, setSprintDateError] = useState('');
 
   // Always fetch fresh developer list when dialog opens so new/teamless devs appear
   useEffect(() => {
@@ -79,18 +82,24 @@ export default function TeamsPage() {
   };
 
   const saveTeam = async () => {
-    if (editTeam) {
-      await updateTeam({ ...editTeam, ...teamForm });
-    } else {
-      await addTeam(teamForm);
+    setIsSavingTeam(true);
+    try {
+      if (editTeam) {
+        await updateTeam({ ...editTeam, ...teamForm });
+      } else {
+        await addTeam(teamForm);
+      }
+      setTeamDialog(false);
+    } finally {
+      setIsSavingTeam(false);
     }
-    setTeamDialog(false);
   };
 
   const openAddSprint = (teamId: string) => {
     setSprintForm(emptySprintForm);
     setSprintTeamId(teamId);
     setEditSprint(null);
+    setSprintDateError('');
     setSprintDialog(true);
   };
 
@@ -98,16 +107,32 @@ export default function TeamsPage() {
     setSprintForm({ name: s.name, startDate: s.startDate, endDate: s.endDate, status: s.status, goal: s.goal });
     setSprintTeamId(s.teamId);
     setEditSprint(s);
+    setSprintDateError('');
     setSprintDialog(true);
   };
 
   const saveSprint = async () => {
-    if (editSprint) {
-      await updateSprint({ ...editSprint, ...sprintForm });
-    } else {
-      await addSprint({ teamId: sprintTeamId, ...sprintForm });
+    const today = new Date().toISOString().slice(0, 10);
+    if (!editSprint && sprintForm.startDate && sprintForm.startDate < today) {
+      setSprintDateError('Start date must be today or in the future');
+      return;
     }
-    setSprintDialog(false);
+    if (sprintForm.startDate && sprintForm.endDate && sprintForm.endDate <= sprintForm.startDate) {
+      setSprintDateError('End date must be after start date');
+      return;
+    }
+    setSprintDateError('');
+    setIsSavingSprint(true);
+    try {
+      if (editSprint) {
+        await updateSprint({ ...editSprint, ...sprintForm });
+      } else {
+        await addSprint({ teamId: sprintTeamId, ...sprintForm });
+      }
+      setSprintDialog(false);
+    } finally {
+      setIsSavingSprint(false);
+    }
   };
 
   const toggleMember = (member: string) => {
@@ -290,6 +315,7 @@ export default function TeamsPage() {
               fullWidth
               size="small"
               placeholder="e.g. Frontend Team"
+              required
             />
             <TextField
               label="Description"
@@ -323,8 +349,8 @@ export default function TeamsPage() {
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setTeamDialog(false)}>Cancel</Button>
-          <Button variant="contained" onClick={saveTeam} disabled={!teamForm.name}>
-            Save
+          <Button variant="contained" onClick={saveTeam} disabled={isSavingTeam || !teamForm.name}>
+            {isSavingTeam ? 'Saving…' : 'Save'}
           </Button>
         </DialogActions>
       </Dialog>
@@ -342,6 +368,7 @@ export default function TeamsPage() {
                 size="small"
                 fullWidth
                 placeholder="e.g. Sprint 4"
+                required
               />
               <FormControl size="small" fullWidth>
                 <InputLabel>Status</InputLabel>
@@ -361,16 +388,21 @@ export default function TeamsPage() {
                 label="Start Date"
                 type="date"
                 value={sprintForm.startDate}
-                onChange={(e) => setSprintForm((f) => ({ ...f, startDate: e.target.value }))}
+                onChange={(e) => { setSprintForm((f) => ({ ...f, startDate: e.target.value })); setSprintDateError(''); }}
                 size="small"
                 InputLabelProps={{ shrink: true }}
+                inputProps={{ min: !editSprint ? new Date().toISOString().slice(0, 10) : undefined }}
                 fullWidth
+                required
               />
               <TextField
                 label="End Date"
                 type="date"
                 value={sprintForm.endDate}
-                onChange={(e) => setSprintForm((f) => ({ ...f, endDate: e.target.value }))}
+                onChange={(e) => { setSprintForm((f) => ({ ...f, endDate: e.target.value })); setSprintDateError(''); }}
+                error={!!sprintDateError}
+                helperText={sprintDateError}
+                required
                 size="small"
                 InputLabelProps={{ shrink: true }}
                 fullWidth
@@ -393,9 +425,9 @@ export default function TeamsPage() {
           <Button
             variant="contained"
             onClick={saveSprint}
-            disabled={!sprintForm.name || !sprintForm.startDate || !sprintForm.endDate}
+            disabled={isSavingSprint || !sprintForm.name || !sprintForm.startDate || !sprintForm.endDate}
           >
-            Save
+            {isSavingSprint ? 'Saving…' : 'Save'}
           </Button>
         </DialogActions>
       </Dialog>

@@ -33,7 +33,7 @@ import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
 import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
 import SpeedIcon from '@mui/icons-material/Speed';
-import { Story, initialStories, developers, StoryStatus } from '../data/mockData';
+import { Story, initialStories, StoryStatus } from '../data/mockData';
 import { useApp } from '../context/AppContext';
 import { apiGetStories, apiCreateStory, apiUpdateStory } from '../api/api';
 
@@ -85,7 +85,7 @@ const emptyForm = (teamId = '', sprintId = ''): Omit<Story, 'id'> => ({
 });
 
 export default function StoriesPage() {
-  const { teams, sprints, backendOnline, backendChecked } = useApp();
+  const { teams, sprints, developerProfiles, backendOnline, backendChecked } = useApp();
   const [stories, setStories] = useState<Story[]>([]);
 
   useEffect(() => {
@@ -118,6 +118,7 @@ export default function StoriesPage() {
   const [editTarget, setEditTarget] = useState<Story | null>(null);
   const [form, setForm] = useState<Omit<Story, 'id'>>(emptyForm());
   const [saveError, setSaveError] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
 
   const teamSprints = useMemo(
     () => selectedTeamId === 'all'
@@ -189,6 +190,7 @@ export default function StoriesPage() {
 
   const handleSave = async () => {
     setSaveError('');
+    setIsSaving(true);
     try {
       if (backendOnline) {
         if (editTarget) {
@@ -209,6 +211,8 @@ export default function StoriesPage() {
       setDialogOpen(false);
     } catch (err: any) {
       setSaveError(err?.message ?? 'Save failed. Check the backend is running and try again.');
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -373,7 +377,7 @@ export default function StoriesPage() {
           <InputLabel>Assignee</InputLabel>
           <Select value={filterAssignee} label="Assignee" onChange={(e) => setFilterAssignee(e.target.value)}>
             <MenuItem value="all">All Assignees</MenuItem>
-            {developers.map((d) => <MenuItem key={d} value={d}>{d}</MenuItem>)}
+            {developerProfiles.map((d) => <MenuItem key={d.id} value={d.name}>{d.name}</MenuItem>)}
           </Select>
         </FormControl>
         <Typography variant="body2" color="text.secondary">
@@ -440,7 +444,7 @@ export default function StoriesPage() {
         <DialogTitle>{editTarget ? 'Edit Story' : 'Add Story'}</DialogTitle>
         <DialogContent>
           <Stack spacing={2} sx={{ mt: 1 }}>
-            <TextField label="Title" value={form.title} onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))} fullWidth size="small" />
+            <TextField label="Title" value={form.title} onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))} fullWidth size="small" required />
             <TextField label="Description" value={form.description} onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))} fullWidth size="small" multiline rows={2} />
             <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
               <TextField label="Story Points" type="number" value={form.points}
@@ -466,14 +470,14 @@ export default function StoriesPage() {
               </FormControl>
             </Stack>
             <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
-              <FormControl size="small" fullWidth>
-                <InputLabel>Team</InputLabel>
+              <FormControl size="small" fullWidth required>
+                <InputLabel required>Team</InputLabel>
                 <Select value={form.teamId} label="Team" onChange={(e) => setForm((f) => ({ ...f, teamId: e.target.value, sprintId: '' }))}>
                   {teams.map((t) => <MenuItem key={t.id} value={t.id}>{t.name}</MenuItem>)}
                 </Select>
               </FormControl>
-              <FormControl size="small" fullWidth>
-                <InputLabel>Sprint</InputLabel>
+              <FormControl size="small" fullWidth required>
+                <InputLabel required>Sprint</InputLabel>
                 <Select value={form.sprintId} label="Sprint" onChange={(e) => setForm((f) => ({ ...f, sprintId: e.target.value }))}>
                   {sprints.filter((s) => s.teamId === form.teamId).map((s) => (
                     <MenuItem key={s.id} value={s.id}>{s.name}</MenuItem>
@@ -489,11 +493,12 @@ export default function StoriesPage() {
                 size="small"
                 fullWidth
                 placeholder="Client or team member name"
+                required
               />
-              <FormControl size="small" fullWidth>
-                <InputLabel>Assignee</InputLabel>
+              <FormControl size="small" fullWidth required>
+                <InputLabel required>Assignee</InputLabel>
                 <Select value={form.assignee} label="Assignee" onChange={(e) => setForm((f) => ({ ...f, assignee: e.target.value }))}>
-                  {developers.map((d) => <MenuItem key={d} value={d}>{d}</MenuItem>)}
+                  {developerProfiles.map((d) => <MenuItem key={d.id} value={d.name}>{d.name}</MenuItem>)}
                 </Select>
               </FormControl>
             </Stack>
@@ -512,7 +517,7 @@ export default function StoriesPage() {
         )}
         <DialogActions>
           <Button onClick={() => setDialogOpen(false)}>Cancel</Button>
-          <Button variant="contained" onClick={handleSave} disabled={!form.title || !form.reporter || !form.assignee || !form.teamId || !form.sprintId}>Save</Button>
+          <Button variant="contained" onClick={handleSave} disabled={isSaving || !form.title || !form.reporter || !form.assignee || !form.teamId || !form.sprintId}>{isSaving ? 'Saving…' : 'Save'}</Button>
         </DialogActions>
       </Dialog>
     </Box>

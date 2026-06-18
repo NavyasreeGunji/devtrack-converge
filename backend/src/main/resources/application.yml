@@ -29,5 +29,16 @@ spring:
       write-dates-as-timestamps: false
     deserialization:
       fail-on-unknown-properties: false
+# mail: (uncomment and configure when SMTP credentials are available)
+#   host: ${MAIL_HOST}
+#   port: ${MAIL_PORT:587}
+#   username: ${MAIL_USERNAME}
+#   password: ${MAIL_PASSWORD}
+#   properties:
+#     mail:
+#       smtp:
+#         auth: true
+#         starttls:
+#           enable: true
 server:
   port: ${PORT:8080}

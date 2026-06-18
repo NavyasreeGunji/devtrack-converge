@@ -198,6 +198,20 @@ export async function apiLogin(username: string, password: string): Promise<Deve
   return mapDeveloper(data);
 }
 
+export async function apiSendOtp(username: string): Promise<{ maskedEmail: string }> {
+  return req<{ maskedEmail: string }>('/auth/send-otp', {
+    method: 'POST',
+    body: JSON.stringify({ username }),
+  });
+}
+
+export async function apiResetPassword(username: string, otp: string, newPassword: string): Promise<void> {
+  await req<any>('/auth/reset-password', {
+    method: 'POST',
+    body: JSON.stringify({ username, otp, newPassword }),
+  });
+}
+
 // ─── Developers ──────────────────────────────────────────────────────────────
 
 export const apiGetDevelopers = () => req<any[]>('/developers').then(list => list.map(mapDeveloper));

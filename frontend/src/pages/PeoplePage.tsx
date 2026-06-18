@@ -32,9 +32,18 @@ const roleConfig: Record<DeveloperRole, { color: string; bg: string }> = {
   DevOps: { color: '#16a34a', bg: '#dcfce7' },
   'Tech Lead': { color: '#d97706', bg: '#fef3c7' },
   Manager: { color: '#dc2626', bg: '#fee2e2' },
+  HR: { color: '#0891b2', bg: '#e0f2fe' },
+  'Sprint Master': { color: '#be185d', bg: '#fce7f3' },
+  'Associate Manager': { color: '#9333ea', bg: '#f3e8ff' },
+  'Delivery Manager': { color: '#059669', bg: '#d1fae5' },
+  'Technical Manager': { color: '#b45309', bg: '#fef3c7' },
 };
 
-const roles: DeveloperRole[] = ['Developer', 'QA Engineer', 'DevOps', 'Tech Lead', 'Manager'];
+const roles: DeveloperRole[] = [
+  'Developer', 'QA Engineer', 'DevOps', 'Tech Lead',
+  'Manager', 'Associate Manager', 'Delivery Manager', 'Technical Manager',
+  'HR', 'Sprint Master',
+];
 
 const avatarColors = ['#2563EB', '#7C3AED', '#16a34a', '#d97706', '#dc2626', '#0891b2', '#be185d'];
 
@@ -56,35 +65,127 @@ const ptColor: Record<ProjectType, { color: string; bg: string }> = {
 
 const emptyForm = { name: '', email: '', role: 'Developer' as DeveloperRole, teamIds: [] as string[], projectTypes: [] as ProjectType[] };
 
+function isValidEmail(email: string): boolean {
+  return /^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(email);
+}
+
+function isValidName(name: string): boolean {
+  return /^[a-zA-Z\s'\-]+$/.test(name);
+}
+
 export default function PeoplePage() {
-  const { teams, developerProfiles, addDeveloper, updateDeveloper } = useApp();
+  const { teams, developerProfiles, currentUser, addDeveloper, updateDeveloper, updateTeam } = useApp();
+
+  const PRIVILEGED_ROLES: DeveloperRole[] = ['Manager', 'Associate Manager', 'Delivery Manager', 'Technical Manager', 'Tech Lead', 'HR', 'Sprint Master'];
+  const canEditAll = currentUser ? PRIVILEGED_ROLES.includes(currentUser.role) : false;
+  const canEdit = (dev: DeveloperProfile) => canEditAll || currentUser?.id === dev.id;
   const [filterRole, setFilterRole] = useState('all');
   const [filterTeam, setFilterTeam] = useState('all');
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editTarget, setEditTarget] = useState<DeveloperProfile | null>(null);
   const [form, setForm] = useState(emptyForm);
+  const [isSaving, setIsSaving] = useState(false);
+  const [emailError, setEmailError] = useState('');
+  const [nameError, setNameError] = useState('');
 
   const displayed = developerProfiles
     .filter((d) => filterRole === 'all' || d.role === filterRole)
-    .filter((d) => filterTeam === 'all' || d.teamIds.includes(filterTeam))
+    .filter((d) => {
+      if (filterTeam === 'all') return true;
+      const team = teams.find((t) => t.id === filterTeam);
+      return d.teamIds.includes(filterTeam) || (team?.members.includes(d.name) ?? false);
+    })
     .sort((a, b) => Number(a.id.replace('DEV-', '')) - Number(b.id.replace('DEV-', '')));
 
-  const openAdd = () => { setForm(emptyForm); setEditTarget(null); setDialogOpen(true); };
+  const openAdd = () => { setForm(emptyForm); setEditTarget(null); setEmailError(''); setNameError(''); setDialogOpen(true); };
   const openEdit = (d: DeveloperProfile) => {
     setForm({ name: d.name, email: d.email, role: d.role, teamIds: [...d.teamIds], projectTypes: [...(d.projectTypes ?? [])] });
     setEditTarget(d);
+    setEmailError('');
+    setNameError('');
     setDialogOpen(true);
   };
 
-  const handleSave = async () => {
-    if (editTarget) {
-      await updateDeveloper({ ...editTarget, ...form });
-    } else {
-      const newId = `DEV-${String(developerProfiles.length + 1).padStart(3, '0')}`;
-      const username = form.name.split(' ')[0].toLowerCase();
-      await addDeveloper({ id: newId, ...form, username, password: 'Converge@2026' });
+  const validateEmail = (email: string, currentId?: string): string => {
+    if (!email) return 'Email is required';
+    if (!isValidEmail(email)) return 'Enter a valid email (no special characters after @)';
+    const duplicate = developerProfiles.find(
+      (d) => d.email.toLowerCase() === email.toLowerCase() && d.id !== currentId
+    );
+    if (duplicate) return 'A developer with this email already exists';
+    return '';
+  };
+
+  const validateName = (name: string): string => {
+    if (!name.trim()) return 'Name is required';
+    if (!isValidName(name)) return 'Name should only contain letters, spaces, hyphens, and apostrophes';
+    return '';
+  };
+
+  const handleNameChange = (name: string) => {
+    setForm((f) => ({ ...f, name }));
+    setNameError(validateName(name));
+  };
+
+  const handleEmailChange = (email: string) => {
+    setForm((f) => ({ ...f, email }));
+    setEmailError(validateEmail(email, editTarget?.id));
+  };
+
+  const syncTeamMembers = async (devName: string, oldName: string, oldTeamIds: string[], newTeamIds: string[]) => {
+    const addedIds = newTeamIds.filter((id) => !oldTeamIds.includes(id));
+    const removedIds = oldTeamIds.filter((id) => !newTeamIds.includes(id));
+    const updates: Promise<void>[] = [];
+
+    for (const teamId of addedIds) {
+      const team = teams.find((t) => t.id === teamId);
+      if (team && !team.members.includes(devName)) {
+        updates.push(updateTeam({ ...team, members: [...team.members, devName] }));
+      }
     }
-    setDialogOpen(false);
+    for (const teamId of removedIds) {
+      const team = teams.find((t) => t.id === teamId);
+      if (team && team.members.includes(oldName)) {
+        updates.push(updateTeam({ ...team, members: team.members.filter((m) => m !== oldName) }));
+      }
+    }
+    // Handle name change: rename in teams that still have old name
+    if (oldName && oldName !== devName) {
+      for (const teamId of newTeamIds.filter((id) => !addedIds.includes(id))) {
+        const team = teams.find((t) => t.id === teamId);
+        if (team && team.members.includes(oldName) && !team.members.includes(devName)) {
+          updates.push(updateTeam({
+            ...team,
+            members: team.members.map((m) => (m === oldName ? devName : m)),
+          }));
+        }
+      }
+    }
+    await Promise.all(updates);
+  };
+
+  const handleSave = async () => {
+    const nErr = validateName(form.name);
+    const eErr = validateEmail(form.email, editTarget?.id);
+    if (nErr) setNameError(nErr);
+    if (eErr) setEmailError(eErr);
+    if (nErr || eErr) return;
+    setIsSaving(true);
+    try {
+      const oldTeamIds = editTarget?.teamIds ?? [];
+      const oldName = editTarget?.name ?? '';
+      if (editTarget) {
+        await updateDeveloper({ ...editTarget, ...form });
+      } else {
+        const newId = `DEV-${String(developerProfiles.length + 1).padStart(3, '0')}`;
+        const username = form.name.split(' ')[0].toLowerCase();
+        await addDeveloper({ id: newId, ...form, username, password: 'Converge@2026' });
+      }
+      await syncTeamMembers(form.name, oldName, oldTeamIds, form.teamIds);
+      setDialogOpen(false);
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const toggleTeam = (teamId: string) => {
@@ -126,16 +227,18 @@ export default function PeoplePage() {
           {displayed.length} {displayed.length === 1 ? 'person' : 'people'}
         </Typography>
         <Box sx={{ flexGrow: 1 }} />
-        <Button variant="contained" startIcon={<AddIcon />} onClick={openAdd}>
-          Add Developer
-        </Button>
+        {canEditAll && (
+          <Button variant="contained" startIcon={<AddIcon />} onClick={openAdd}>
+            Add Developer
+          </Button>
+        )}
       </Stack>
 
       <Grid container spacing={2}>
         {displayed.map((dev) => {
           const rc = roleConfig[dev.role];
           const color = getAvatarColor(dev.name);
-          const devTeams = teams.filter((t) => dev.teamIds.includes(t.id));
+          const devTeams = teams.filter((t) => dev.teamIds.includes(t.id) || t.members.includes(dev.name));
           return (
             <Grid item xs={12} sm={6} md={4} key={dev.id}>
               <Paper
@@ -148,16 +251,22 @@ export default function PeoplePage() {
                   '&:hover .edit-btn': { opacity: 1 },
                 }}
               >
+                {canEdit(dev) && (
                 <Tooltip title="Edit">
                   <IconButton
                     className="edit-btn"
                     size="small"
                     onClick={() => openEdit(dev)}
-                    sx={{ position: 'absolute', top: 12, right: 12, opacity: 0, transition: 'opacity 0.15s' }}
+                    sx={{
+                      position: 'absolute', top: 12, right: 12,
+                      opacity: currentUser?.id === dev.id ? 0.6 : 0,
+                      transition: 'opacity 0.15s',
+                    }}
                   >
                     <EditIcon fontSize="small" />
                   </IconButton>
                 </Tooltip>
+                )}
 
                 <Stack direction="row" spacing={2} alignItems="center">
                   <Avatar sx={{ width: 52, height: 52, bgcolor: color, fontSize: 18, fontWeight: 700 }}>
@@ -212,19 +321,25 @@ export default function PeoplePage() {
             <TextField
               label="Full Name"
               value={form.name}
-              onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
+              onChange={(e) => handleNameChange(e.target.value)}
               fullWidth size="small"
               placeholder="e.g. John Smith"
+              required
+              error={!!nameError}
+              helperText={nameError}
             />
             <TextField
               label="Email"
               type="email"
               value={form.email}
-              onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
+              onChange={(e) => handleEmailChange(e.target.value)}
               fullWidth size="small"
               placeholder="john@company.com"
+              required
+              error={!!emailError}
+              helperText={emailError}
             />
-            <FormControl size="small" fullWidth>
+            <FormControl size="small" fullWidth disabled={!canEditAll}>
               <InputLabel>Role</InputLabel>
               <Select
                 value={form.role}
@@ -290,9 +405,9 @@ export default function PeoplePage() {
           <Button
             variant="contained"
             onClick={handleSave}
-            disabled={!form.name || !form.email}
+            disabled={isSaving || !form.name || !form.email || !!nameError || !!emailError}
           >
-            Save
+            {isSaving ? 'Saving…' : 'Save'}
           </Button>
         </DialogActions>
       </Dialog>

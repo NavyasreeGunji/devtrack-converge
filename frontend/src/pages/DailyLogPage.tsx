@@ -29,7 +29,6 @@ import {
   Story,
   dailyLogs as initialLogs,
   initialStories,
-  developers,
 } from '../data/mockData';
 import { useApp } from '../context/AppContext';
 import { apiGetLogs, apiCreateLog, apiGetStories } from '../api/api';
@@ -43,7 +42,7 @@ const emptyForm = (): Omit<DailyLog, 'id'> => ({
 });
 
 export default function DailyLogPage() {
-  const { currentUser, backendOnline, backendChecked } = useApp();
+  const { currentUser, developerProfiles, backendOnline, backendChecked } = useApp();
   const [logs, setLogs] = useState<DailyLog[]>([]);
   const [allStories, setAllStories] = useState<Story[]>([]);
 
@@ -62,6 +61,7 @@ export default function DailyLogPage() {
   const [filterDate, setFilterDate] = useState('');
   const [dialogOpen, setDialogOpen] = useState(false);
   const [saveError, setSaveError] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
   const [form, setForm] = useState<Omit<DailyLog, 'id'>>({
     ...emptyForm(),
     developer: currentUser?.name ?? '',
@@ -83,6 +83,7 @@ export default function DailyLogPage() {
 
   const handleSave = async () => {
     setSaveError('');
+    setIsSaving(true);
     try {
       if (backendOnline) {
         const created = await apiCreateLog(form);
@@ -95,6 +96,8 @@ export default function DailyLogPage() {
       setForm({ ...emptyForm(), developer: currentUser?.name ?? '' });
     } catch (err: any) {
       setSaveError(err?.message ?? 'Save failed. Check the backend is running and try again.');
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -109,8 +112,8 @@ export default function DailyLogPage() {
             onChange={(e) => setFilterDev(e.target.value)}
           >
             <MenuItem value="all">All Developers</MenuItem>
-            {developers.map((d) => (
-              <MenuItem key={d} value={d}>{d}</MenuItem>
+            {developerProfiles.map((d) => (
+              <MenuItem key={d.id} value={d.name}>{d.name}</MenuItem>
             ))}
           </Select>
         </FormControl>
@@ -175,15 +178,15 @@ export default function DailyLogPage() {
         <DialogContent>
           <Stack spacing={2} sx={{ mt: 1 }}>
             <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
-              <FormControl size="small" fullWidth>
-                <InputLabel>Developer</InputLabel>
+              <FormControl size="small" fullWidth required>
+                <InputLabel required>Developer</InputLabel>
                 <Select
                   value={form.developer}
                   label="Developer"
                   onChange={(e) => setForm((f) => ({ ...f, developer: e.target.value, title: '' }))}
                 >
-                  {developers.map((d) => (
-                    <MenuItem key={d} value={d}>{d}</MenuItem>
+                  {developerProfiles.map((d) => (
+                    <MenuItem key={d.id} value={d.name}>{d.name}</MenuItem>
                   ))}
                 </Select>
               </FormControl>
@@ -195,6 +198,7 @@ export default function DailyLogPage() {
                 size="small"
                 InputLabelProps={{ shrink: true }}
                 fullWidth
+                required
               />
             </Stack>
 
@@ -209,6 +213,7 @@ export default function DailyLogPage() {
                   label="Story / Task"
                   size="small"
                   placeholder={devStories.length === 0 ? 'No stories assigned to this developer' : 'Select a story…'}
+                  required
                 />
               )}
               noOptionsText="No stories assigned to this developer"
@@ -222,6 +227,7 @@ export default function DailyLogPage() {
               size="small"
               multiline
               rows={3}
+              required
               placeholder="What did you work on today?"
             />
             <TextField
@@ -232,6 +238,7 @@ export default function DailyLogPage() {
               size="small"
               sx={{ width: 120 }}
               inputProps={{ min: 0.5, max: 12, step: 0.5 }}
+              required
             />
           </Stack>
         </DialogContent>
@@ -241,9 +248,9 @@ export default function DailyLogPage() {
           <Button
             variant="contained"
             onClick={handleSave}
-            disabled={!form.developer || !form.title || !form.description}
+            disabled={isSaving || !form.developer || !form.title || !form.description || form.hours <= 0}
           >
-            Save
+            {isSaving ? 'Saving…' : 'Save'}
           </Button>
         </DialogActions>
       </Dialog>

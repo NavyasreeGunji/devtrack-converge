@@ -27,7 +27,7 @@ import {
 import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
 import Alert from '@mui/material/Alert';
-import { Bug, bugs as initialBugs, developers, BugSeverity, BugStatus } from '../data/mockData';
+import { Bug, bugs as initialBugs, BugSeverity, BugStatus } from '../data/mockData';
 import { useApp } from '../context/AppContext';
 import { apiGetBugs, apiCreateBug, apiUpdateBug } from '../api/api';
 
@@ -58,7 +58,7 @@ const emptyForm = (): Omit<Bug, 'id'> => ({
 });
 
 export default function BugsPage() {
-  const { backendOnline, backendChecked } = useApp();
+  const { developerProfiles, backendOnline, backendChecked } = useApp();
   const [bugs, setBugs] = useState<Bug[]>([]);
 
   useEffect(() => {
@@ -76,6 +76,7 @@ export default function BugsPage() {
   const [editTarget, setEditTarget] = useState<Bug | null>(null);
   const [form, setForm] = useState<Omit<Bug, 'id'>>(emptyForm());
   const [saveError, setSaveError] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
 
   const filtered = bugs
     .filter((b) => filterStatus === 'all' || b.status === filterStatus)
@@ -98,6 +99,7 @@ export default function BugsPage() {
 
   const handleSave = async () => {
     setSaveError('');
+    setIsSaving(true);
     try {
       if (backendOnline) {
         if (editTarget) {
@@ -118,6 +120,8 @@ export default function BugsPage() {
       setDialogOpen(false);
     } catch (err: any) {
       setSaveError(err?.message ?? 'Save failed. Check the backend is running and try again.');
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -243,6 +247,7 @@ export default function BugsPage() {
               onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
               fullWidth
               size="small"
+              required
             />
             <TextField
               label="Description"
@@ -310,16 +315,17 @@ export default function BugsPage() {
                 size="small"
                 fullWidth
                 placeholder="Client or team member name"
+                required
               />
-              <FormControl size="small" fullWidth>
-                <InputLabel>Assignee</InputLabel>
+              <FormControl size="small" fullWidth required>
+                <InputLabel required>Assignee</InputLabel>
                 <Select
                   value={form.assignee}
                   label="Assignee"
                   onChange={(e) => setForm((f) => ({ ...f, assignee: e.target.value }))}
                 >
-                  {developers.map((d) => (
-                    <MenuItem key={d} value={d}>{d}</MenuItem>
+                  {developerProfiles.map((d) => (
+                    <MenuItem key={d.id} value={d.name}>{d.name}</MenuItem>
                   ))}
                 </Select>
               </FormControl>
@@ -353,9 +359,9 @@ export default function BugsPage() {
             variant="contained"
             color="error"
             onClick={handleSave}
-            disabled={!form.title || !form.reporter || !form.assignee}
+            disabled={isSaving || !form.title || !form.reporter || !form.assignee}
           >
-            Save
+            {isSaving ? 'Saving…' : 'Save'}
           </Button>
         </DialogActions>
       </Dialog>
