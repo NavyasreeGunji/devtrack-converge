@@ -126,7 +126,9 @@ export default function StoriesPage() {
   const teamSprints = useMemo(
     () => selectedTeamId === 'all'
       ? []
-      : sprints.filter((s) => s.teamId === selectedTeamId).sort((a, b) => a.startDate.localeCompare(b.startDate)),
+      : sprints
+          .filter((s) => s.teamId === selectedTeamId && s.status !== 'completed')
+          .sort((a, b) => a.startDate.localeCompare(b.startDate)),
     [sprints, selectedTeamId]
   );
 
