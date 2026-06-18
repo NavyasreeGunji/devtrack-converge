@@ -293,12 +293,14 @@ export default function PeoplePage() {
                   </Typography>
                 </Stack>
 
-                <Stack direction="row" spacing={0.75} flexWrap="wrap" useFlexGap sx={{ minHeight: 24 }}>
-                  {(dev.projectTypes ?? []).map((pt) => (
-                    <Chip key={pt} label={pt} size="small"
-                      sx={{ bgcolor: ptColor[pt].bg, color: ptColor[pt].color, fontWeight: 600, fontSize: 11 }} />
-                  ))}
-                </Stack>
+                {(dev.projectTypes ?? []).length > 0 && (
+                  <Stack direction="row" spacing={0.75} flexWrap="wrap" useFlexGap>
+                    {(dev.projectTypes ?? []).map((pt) => (
+                      <Chip key={pt} label={pt} size="small"
+                        sx={{ bgcolor: ptColor[pt].bg, color: ptColor[pt].color, fontWeight: 600, fontSize: 11 }} />
+                    ))}
+                  </Stack>
+                )}
 
                 {devTeams.length > 0 && (
                   <Stack direction="row" spacing={0.75} flexWrap="wrap" useFlexGap>
