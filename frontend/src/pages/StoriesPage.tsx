@@ -116,12 +116,9 @@ export default function StoriesPage() {
     return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
   });
 
-  // All view state
-  const [allMode, setAllMode] = useState<'3months' | 'all'>('3months');
-  const [filterFromDate, setFilterFromDate] = useState(() => {
-    const d = new Date(); d.setMonth(d.getMonth() - 3); return d.toISOString().slice(0, 10);
-  });
-  const [filterToDate, setFilterToDate] = useState(() => new Date().toISOString().slice(0, 10));
+  // All view date range
+  const [filterFromDate, setFilterFromDate] = useState('');
+  const [filterToDate, setFilterToDate] = useState('');
 
   const [filterStatus, setFilterStatus] = useState('all');
   const [filterAssignee, setFilterAssignee] = useState('all');
@@ -160,7 +157,6 @@ export default function StoriesPage() {
 
   const baseFiltered = useMemo(() => {
     if (viewBy === 'all') {
-      if (allMode === 'all') return stories;
       return stories.filter((s) =>
         (!filterFromDate || s.createdDate >= filterFromDate) &&
         (!filterToDate || s.createdDate <= filterToDate)
@@ -171,7 +167,7 @@ export default function StoriesPage() {
       return stories.filter((s) => s.teamId === selectedTeamId && s.sprintId === resolvedSprintId);
     }
     return stories.filter((s) => getMonthKey(s.createdDate) === selectedMonth);
-  }, [stories, viewBy, allMode, filterFromDate, filterToDate, selectedTeamId, resolvedSprintId, selectedMonth]);
+  }, [stories, viewBy, filterFromDate, filterToDate, selectedTeamId, resolvedSprintId, selectedMonth]);
 
   const filtered = useMemo(
     () =>
@@ -388,28 +384,31 @@ export default function StoriesPage() {
           </FormControl>
         )}
 
-        {/* All view: 3 months vs all data toggle + date pickers */}
+        {/* All view: sprint filter + date range */}
         {viewBy === 'all' && (
           <Stack direction="row" spacing={1.5} alignItems="center">
-            <ToggleButtonGroup
-              value={allMode}
-              exclusive
-              onChange={(_, v) => v && setAllMode(v)}
-              size="small"
-            >
-              <ToggleButton value="3months">Last 3 Months</ToggleButton>
-              <ToggleButton value="all">All Data</ToggleButton>
-            </ToggleButtonGroup>
-            {allMode === '3months' && (
-              <Stack direction="row" spacing={1} alignItems="center">
-                <Typography variant="caption" color="text.secondary" sx={{ whiteSpace: 'nowrap' }}>From</Typography>
-                <TextField type="date" size="small" value={filterFromDate}
-                  onChange={(e) => setFilterFromDate(e.target.value)} sx={{ width: 140 }} />
-                <Typography variant="caption" color="text.secondary">To</Typography>
-                <TextField type="date" size="small" value={filterToDate}
-                  onChange={(e) => setFilterToDate(e.target.value)} sx={{ width: 140 }} />
-              </Stack>
-            )}
+            <FormControl size="small" sx={{ minWidth: 200 }}>
+              <InputLabel>Sprint</InputLabel>
+              <Select value={filterSprint} label="Sprint" onChange={(e) => setFilterSprint(e.target.value)}>
+                <MenuItem value="all">All Sprints</MenuItem>
+                {sprints.map((sp) => {
+                  const team = teams.find((t) => t.id === sp.teamId);
+                  return (
+                    <MenuItem key={sp.id} value={sp.id}>
+                      {sp.name}{team ? ` (${team.name})` : ''}
+                    </MenuItem>
+                  );
+                })}
+              </Select>
+            </FormControl>
+            <Stack direction="row" spacing={1} alignItems="center">
+              <Typography variant="caption" color="text.secondary" sx={{ whiteSpace: 'nowrap' }}>From</Typography>
+              <TextField type="date" size="small" value={filterFromDate}
+                onChange={(e) => setFilterFromDate(e.target.value)} sx={{ width: 140 }} />
+              <Typography variant="caption" color="text.secondary">To</Typography>
+              <TextField type="date" size="small" value={filterToDate}
+                onChange={(e) => setFilterToDate(e.target.value)} sx={{ width: 140 }} />
+            </Stack>
           </Stack>
         )}
 
@@ -427,24 +426,6 @@ export default function StoriesPage() {
             {developerProfiles.map((d) => <MenuItem key={d.id} value={d.name}>{d.name}</MenuItem>)}
           </Select>
         </FormControl>
-
-        {/* All view: sprint filter */}
-        {viewBy === 'all' && (
-          <FormControl size="small" sx={{ minWidth: 180 }}>
-            <InputLabel>Sprint</InputLabel>
-            <Select value={filterSprint} label="Sprint" onChange={(e) => setFilterSprint(e.target.value)}>
-              <MenuItem value="all">All Sprints</MenuItem>
-              {sprints.map((sp) => {
-                const team = teams.find((t) => t.id === sp.teamId);
-                return (
-                  <MenuItem key={sp.id} value={sp.id}>
-                    {sp.name}{team ? ` (${team.name})` : ''}
-                  </MenuItem>
-                );
-              })}
-            </Select>
-          </FormControl>
-        )}
 
         <Typography variant="body2" color="text.secondary">
           Showing {filtered.length} of {baseFiltered.length} stories
