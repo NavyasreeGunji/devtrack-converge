@@ -302,7 +302,7 @@ export default function PeoplePage() {
                 )}
 
                 {devTeams.length > 0 && (
-                  <Stack direction="row" spacing={0.75} flexWrap="wrap" useFlexGap>
+                  <Stack direction="row" spacing={0.75} flexWrap="wrap" useFlexGap sx={{ width: '100%' }}>
                     {devTeams.map((t) => (
                       <Chip key={t.id} label={t.name} size="small" variant="outlined" />
                     ))}
