@@ -228,8 +228,8 @@ export default function StoriesPage() {
 
   return (
     <Box>
-      {/* View toggle + selectors */}
-      <Stack direction="row" spacing={2} alignItems="center" sx={{ mb: 2 }} flexWrap="wrap" useFlexGap>
+      {/* View toggle */}
+      <Stack direction="row" spacing={2} alignItems="center" sx={{ mb: 2 }}>
         <ToggleButtonGroup
           value={viewBy}
           exclusive
@@ -246,60 +246,6 @@ export default function StoriesPage() {
             <ListAltIcon fontSize="small" /> All
           </ToggleButton>
         </ToggleButtonGroup>
-
-        {viewBy === 'sprint' ? (
-          <Stack direction="row" spacing={1.5} alignItems="center">
-            {/* Team selector */}
-            <FormControl size="small" sx={{ minWidth: 170 }}>
-              <InputLabel>Team</InputLabel>
-              <Select
-                value={selectedTeamId}
-                label="Team"
-                onChange={(e) => { setSelectedTeamId(e.target.value); setSelectedSprintId(''); }}
-              >
-                <MenuItem value="all">All Teams</MenuItem>
-                {teams.map((t) => (
-                  <MenuItem key={t.id} value={t.id}>{t.name}</MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-
-            {/* Sprint chips — hidden when All Teams selected */}
-            {selectedTeamId === 'all' ? null : teamSprints.length === 0 ? (
-              <Typography variant="body2" color="text.secondary">No sprints — add one in Teams</Typography>
-            ) : (
-              <Stack direction="row" spacing={1} flexWrap="wrap">
-                {teamSprints.map((sp) => {
-                  const isActive = sp.id === resolvedSprintId;
-                  return (
-                    <Chip
-                      key={sp.id}
-                      label={`${sp.name}${sp.status === 'active' ? ' 🟢' : ''}`}
-                      onClick={() => setSelectedSprintId(sp.id)}
-                      color={isActive ? 'primary' : 'default'}
-                      variant={isActive ? 'filled' : 'outlined'}
-                      sx={{ fontWeight: isActive ? 700 : 400, cursor: 'pointer' }}
-                    />
-                  );
-                })}
-              </Stack>
-            )}
-          </Stack>
-        ) : viewBy === 'month' ? (
-          <FormControl size="small" sx={{ minWidth: 180 }}>
-            <InputLabel>Select Month</InputLabel>
-            <Select
-              value={selectedMonth}
-              label="Select Month"
-              onChange={(e) => setSelectedMonth(e.target.value)}
-            >
-              {availableMonths.map((m) => (
-                <MenuItem key={m} value={m}>{formatMonth(m)}</MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-        ) : null}
-
         <Box sx={{ flexGrow: 1 }} />
         <Button variant="contained" startIcon={<AddIcon />} onClick={openAdd}
           disabled={viewBy === 'sprint' && (selectedTeamId === 'all' || !resolvedSprintId)}>
@@ -375,6 +321,52 @@ export default function StoriesPage() {
 
       {/* Filters */}
       <Stack direction="row" spacing={2} sx={{ mb: 2 }} alignItems="center" flexWrap="wrap" useFlexGap>
+        {/* Sprint view: team + sprint chips */}
+        {viewBy === 'sprint' && (
+          <>
+            <FormControl size="small" sx={{ minWidth: 170 }}>
+              <InputLabel>Team</InputLabel>
+              <Select
+                value={selectedTeamId}
+                label="Team"
+                onChange={(e) => { setSelectedTeamId(e.target.value); setSelectedSprintId(''); }}
+              >
+                <MenuItem value="all">All Teams</MenuItem>
+                {teams.map((t) => <MenuItem key={t.id} value={t.id}>{t.name}</MenuItem>)}
+              </Select>
+            </FormControl>
+            {selectedTeamId !== 'all' && (
+              teamSprints.length === 0
+                ? <Typography variant="body2" color="text.secondary">No sprints — add one in Teams</Typography>
+                : <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+                    {teamSprints.map((sp) => {
+                      const isActive = sp.id === resolvedSprintId;
+                      return (
+                        <Chip
+                          key={sp.id}
+                          label={`${sp.name}${sp.status === 'active' ? ' 🟢' : ''}`}
+                          onClick={() => setSelectedSprintId(sp.id)}
+                          color={isActive ? 'primary' : 'default'}
+                          variant={isActive ? 'filled' : 'outlined'}
+                          sx={{ fontWeight: isActive ? 700 : 400, cursor: 'pointer' }}
+                        />
+                      );
+                    })}
+                  </Stack>
+            )}
+          </>
+        )}
+
+        {/* Month view: month selector */}
+        {viewBy === 'month' && (
+          <FormControl size="small" sx={{ minWidth: 180 }}>
+            <InputLabel>Select Month</InputLabel>
+            <Select value={selectedMonth} label="Select Month" onChange={(e) => setSelectedMonth(e.target.value)}>
+              {availableMonths.map((m) => <MenuItem key={m} value={m}>{formatMonth(m)}</MenuItem>)}
+            </Select>
+          </FormControl>
+        )}
+
         <FormControl size="small" sx={{ minWidth: 140 }}>
           <InputLabel>Status</InputLabel>
           <Select value={filterStatus} label="Status" onChange={(e) => setFilterStatus(e.target.value)}>
@@ -389,20 +381,25 @@ export default function StoriesPage() {
             {developerProfiles.map((d) => <MenuItem key={d.id} value={d.name}>{d.name}</MenuItem>)}
           </Select>
         </FormControl>
-        <FormControl size="small" sx={{ minWidth: 180 }}>
-          <InputLabel>Sprint</InputLabel>
-          <Select value={filterSprint} label="Sprint" onChange={(e) => setFilterSprint(e.target.value)}>
-            <MenuItem value="all">All Sprints</MenuItem>
-            {sprints.map((sp) => {
-              const team = teams.find((t) => t.id === sp.teamId);
-              return (
-                <MenuItem key={sp.id} value={sp.id}>
-                  {sp.name}{team ? ` (${team.name})` : ''}
-                </MenuItem>
-              );
-            })}
-          </Select>
-        </FormControl>
+
+        {/* All view: sprint filter */}
+        {viewBy === 'all' && (
+          <FormControl size="small" sx={{ minWidth: 180 }}>
+            <InputLabel>Sprint</InputLabel>
+            <Select value={filterSprint} label="Sprint" onChange={(e) => setFilterSprint(e.target.value)}>
+              <MenuItem value="all">All Sprints</MenuItem>
+              {sprints.map((sp) => {
+                const team = teams.find((t) => t.id === sp.teamId);
+                return (
+                  <MenuItem key={sp.id} value={sp.id}>
+                    {sp.name}{team ? ` (${team.name})` : ''}
+                  </MenuItem>
+                );
+              })}
+            </Select>
+          </FormControl>
+        )}
+
         <Typography variant="body2" color="text.secondary">
           Showing {filtered.length} of {baseFiltered.length} stories
         </Typography>
