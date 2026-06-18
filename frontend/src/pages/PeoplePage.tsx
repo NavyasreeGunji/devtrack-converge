@@ -240,13 +240,14 @@ export default function PeoplePage() {
           const color = getAvatarColor(dev.name);
           const devTeams = teams.filter((t) => dev.teamIds.includes(t.id) || t.members.includes(dev.name));
           return (
-            <Grid item xs={12} sm={6} md={4} key={dev.id}>
+            <Grid item xs={12} sm={6} md={4} key={dev.id} sx={{ display: 'flex' }}>
               <Paper
                 sx={{
                   p: 2.5,
                   display: 'flex',
                   flexDirection: 'column',
                   gap: 1.5,
+                  height: '100%',
                   position: 'relative',
                   '&:hover .edit-btn': { opacity: 1 },
                 }}
@@ -292,14 +293,12 @@ export default function PeoplePage() {
                   </Typography>
                 </Stack>
 
-                {(dev.projectTypes ?? []).length > 0 && (
-                  <Stack direction="row" spacing={0.75} flexWrap="wrap" useFlexGap>
-                    {(dev.projectTypes ?? []).map((pt) => (
-                      <Chip key={pt} label={pt} size="small"
-                        sx={{ bgcolor: ptColor[pt].bg, color: ptColor[pt].color, fontWeight: 600, fontSize: 11 }} />
-                    ))}
-                  </Stack>
-                )}
+                <Stack direction="row" spacing={0.75} flexWrap="wrap" useFlexGap sx={{ minHeight: 24 }}>
+                  {(dev.projectTypes ?? []).map((pt) => (
+                    <Chip key={pt} label={pt} size="small"
+                      sx={{ bgcolor: ptColor[pt].bg, color: ptColor[pt].color, fontWeight: 600, fontSize: 11 }} />
+                  ))}
+                </Stack>
 
                 {devTeams.length > 0 && (
                   <Stack direction="row" spacing={0.75} flexWrap="wrap" useFlexGap>
