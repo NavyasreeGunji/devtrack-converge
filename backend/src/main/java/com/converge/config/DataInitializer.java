@@ -19,7 +19,7 @@ public class DataInitializer implements CommandLineRunner {
 
     @Override
     public void run(String... args) {
-        migrateEmailDomain("converge.com", "criskasecurity.com");
+        migrateEmailDomain("criskasecurity.com");
 
         if (developerRepository.count() > 0) return;
 
@@ -45,18 +45,28 @@ public class DataInitializer implements CommandLineRunner {
         System.out.println("✓ Seeded " + developers.size() + " developers");
     }
 
-    private void migrateEmailDomain(String oldDomain, String newDomain) {
+    private void migrateEmailDomain(String newDomain) {
         List<Developer> all = developerRepository.findAll();
         List<Developer> toUpdate = new ArrayList<>();
         for (Developer d : all) {
-            if (d.getEmail() != null && d.getEmail().endsWith("@" + oldDomain)) {
-                d.setEmail(d.getEmail().replace("@" + oldDomain, "@" + newDomain));
+            String email = d.getEmail();
+            if (email == null || email.isBlank()) {
+                // No email at all — derive from username
+                if (d.getUsername() != null && !d.getUsername().isBlank()) {
+                    d.setEmail(d.getUsername() + "@" + newDomain);
+                    toUpdate.add(d);
+                }
+            } else if (!email.endsWith("@" + newDomain)) {
+                // Has an email but wrong domain — swap the domain, keep the local part
+                int atIdx = email.indexOf('@');
+                String local = atIdx > 0 ? email.substring(0, atIdx) : email;
+                d.setEmail(local + "@" + newDomain);
                 toUpdate.add(d);
             }
         }
         if (!toUpdate.isEmpty()) {
             developerRepository.saveAll(toUpdate);
-            System.out.println("✓ Migrated " + toUpdate.size() + " email(s) from @" + oldDomain + " → @" + newDomain);
+            System.out.println("✓ Updated " + toUpdate.size() + " email(s) to @" + newDomain);
         }
     }
 

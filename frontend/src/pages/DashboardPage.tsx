@@ -246,34 +246,23 @@ export default function DashboardPage() {
               {todayLogs.map((log, i) => (
                 <Box key={log.id}>
                   {i > 0 && <Divider sx={{ my: 0.5 }} />}
-                  <ListItem disableGutters sx={{ py: 0.75 }}>
+                  <ListItem
+                    disableGutters
+                    onClick={() => navigate('/daily-log', { state: { developer: log.developer } })}
+                    sx={{ py: 0.75, cursor: 'pointer', borderRadius: 1, px: 0.5, '&:hover': { bgcolor: '#F1F5F9' } }}
+                  >
                     <ListItemAvatar sx={{ minWidth: 42 }}>
                       <Avatar
-                        onClick={() => navigate('/daily-log', { state: { developer: log.developer } })}
                         sx={{
-                          width: 30,
-                          height: 30,
-                          fontSize: 11,
-                          fontWeight: 700,
-                          bgcolor: '#2563EB18',
-                          color: '#2563EB',
-                          cursor: 'pointer',
-                          '&:hover': { bgcolor: '#2563EB30' },
+                          width: 30, height: 30, fontSize: 11, fontWeight: 700,
+                          bgcolor: '#2563EB18', color: '#2563EB',
                         }}
                       >
                         {log.developer.split(' ').map((n) => n[0]).join('')}
                       </Avatar>
                     </ListItemAvatar>
                     <ListItemText
-                      primary={
-                        <Typography
-                          variant="body2" fontWeight={500}
-                          onClick={() => navigate('/daily-log', { state: { developer: log.developer } })}
-                          sx={{ cursor: 'pointer', '&:hover': { color: 'primary.main', textDecoration: 'underline' } }}
-                        >
-                          {log.developer}
-                        </Typography>
-                      }
+                      primary={<Typography variant="body2" fontWeight={500}>{log.developer}</Typography>}
                       secondary={log.description}
                     />
                     <Typography variant="body2" fontWeight={700} color="primary" sx={{ flexShrink: 0 }}>
