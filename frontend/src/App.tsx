@@ -27,6 +27,14 @@ const theme = createTheme({
     MuiChip: {
       styleOverrides: { root: { fontWeight: 500 } },
     },
+    MuiTextField: {
+      styleOverrides: {
+        root: {
+          '& input[type="date"]': { paddingRight: '8px', minWidth: '120px' },
+          '& input[type="date"]::-webkit-calendar-picker-indicator': { marginLeft: 0, cursor: 'pointer' },
+        },
+      },
+    },
   },
 });
 

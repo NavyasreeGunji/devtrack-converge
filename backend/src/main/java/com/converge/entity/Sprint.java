@@ -16,6 +16,8 @@ public class Sprint {
     private LocalDate startDate;
     private LocalDate endDate;
     private String status; // planned | active | completed
+
+    @Column(columnDefinition = "TEXT")
     private String goal;
 
     public Long getId() { return id; }

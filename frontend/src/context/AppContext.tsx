@@ -172,8 +172,16 @@ export function AppProvider({ children }: { children: ReactNode }) {
     if (backendOnline) {
       const updated = await apiUpdateDeveloper(dev.id, dev);
       setDeveloperProfiles((prev) => prev.map((d) => (d.id === dev.id ? updated : d)));
+      if (currentUser && currentUser.id === dev.id) {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+        setCurrentUser(updated);
+      }
     } else {
       setDeveloperProfiles((prev) => prev.map((d) => (d.id === dev.id ? dev : d)));
+      if (currentUser && currentUser.id === dev.id) {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(dev));
+        setCurrentUser(dev);
+      }
     }
   };
 

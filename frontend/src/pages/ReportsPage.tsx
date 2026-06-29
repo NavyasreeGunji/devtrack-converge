@@ -103,7 +103,7 @@ export default function ReportsPage() {
       return [
         s.id, `"${s.title}"`, s.points, statusConfig[s.status].label,
         s.reporter, s.assignee, team, sprint?.name ?? '',
-        sprint?.endDate ?? '', s.createdDate, s.startedDate, s.completedDate,
+        s.dueDate ?? '', s.createdDate, s.startedDate, s.completedDate,
       ].join(',');
     });
     const csv = [headers.join(','), ...rows].join('\n');

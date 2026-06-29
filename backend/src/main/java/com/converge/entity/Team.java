@@ -11,7 +11,10 @@ public class Team {
     private Long id;
 
     private String name;
+
+    @Column(columnDefinition = "TEXT")
     private String description;
+
     private String memberIds; // comma-separated developer IDs
 
     public Long getId() { return id; }

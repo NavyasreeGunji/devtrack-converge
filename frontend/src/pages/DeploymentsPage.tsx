@@ -101,22 +101,24 @@ export default function DeploymentsPage() {
 
   const handleSave = async () => {
     setSaveError('');
+    const trimmedForm = { ...form, description: form.description.trim() };
+    setForm(trimmedForm);
     setIsSaving(true);
     try {
       if (backendOnline) {
         if (editTarget) {
-          const updated = await apiUpdateDeployment(editTarget.id, form);
+          const updated = await apiUpdateDeployment(editTarget.id, trimmedForm);
           setDeployments((prev) => prev.map((d) => (d.id === editTarget.id ? updated : d)));
         } else {
-          const created = await apiCreateDeployment(form);
+          const created = await apiCreateDeployment(trimmedForm);
           setDeployments((prev) => [...prev, created]);
         }
       } else {
         if (editTarget) {
-          setDeployments((prev) => prev.map((d) => (d.id === editTarget.id ? { ...form, id: editTarget.id } : d)));
+          setDeployments((prev) => prev.map((d) => (d.id === editTarget.id ? { ...trimmedForm, id: editTarget.id } : d)));
         } else {
           const newId = `D-${String(deployments.length + 1).padStart(3, '0')}`;
-          setDeployments((prev) => [...prev, { ...form, id: newId }]);
+          setDeployments((prev) => [...prev, { ...trimmedForm, id: newId }]);
         }
       }
       setDialogOpen(false);
@@ -451,7 +453,7 @@ export default function DeploymentsPage() {
           <Button
             variant="contained"
             onClick={handleSave}
-            disabled={isSaving || !form.deployedBy || !form.description}
+            disabled={isSaving || !form.deployedBy || !form.description.trim()}
           >
             {isSaving ? 'Saving…' : 'Save'}
           </Button>

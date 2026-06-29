@@ -200,22 +200,24 @@ export default function StoriesPage() {
 
   const handleSave = async () => {
     setSaveError('');
+    const trimmedForm = { ...form, title: form.title.trim(), reporter: form.reporter.trim() };
+    setForm(trimmedForm);
     setIsSaving(true);
     try {
       if (backendOnline) {
         if (editTarget) {
-          const updated = await apiUpdateStory(editTarget.id, form);
+          const updated = await apiUpdateStory(editTarget.id, trimmedForm);
           setStories((prev) => prev.map((s) => (s.id === editTarget.id ? updated : s)));
         } else {
-          const created = await apiCreateStory(form);
+          const created = await apiCreateStory(trimmedForm);
           setStories((prev) => [...prev, created]);
         }
       } else {
         if (editTarget) {
-          setStories((prev) => prev.map((s) => (s.id === editTarget.id ? { ...form, id: editTarget.id } : s)));
+          setStories((prev) => prev.map((s) => (s.id === editTarget.id ? { ...trimmedForm, id: editTarget.id } : s)));
         } else {
           const newId = `S-${String(stories.length + 1).padStart(3, '0')}`;
-          setStories((prev) => [...prev, { ...form, id: newId }]);
+          setStories((prev) => [...prev, { ...trimmedForm, id: newId }]);
         }
       }
       setDialogOpen(false);
@@ -249,7 +251,7 @@ export default function StoriesPage() {
         </ToggleButtonGroup>
         <Box sx={{ flexGrow: 1 }} />
         <Button variant="contained" startIcon={<AddIcon />} onClick={openAdd}
-          disabled={viewBy === 'sprint' && (selectedTeamId === 'all' || !resolvedSprintId)}>
+          disabled={viewBy === 'month' || (viewBy === 'sprint' && (selectedTeamId === 'all' || !resolvedSprintId))}>
           Add Story
         </Button>
       </Stack>
@@ -409,8 +411,8 @@ export default function StoriesPage() {
             {filtered.map((story) => (
               <TableRow key={story.id} hover>
                 <TableCell><Typography variant="caption" color="text.disabled" fontWeight={600}>{story.id}</Typography></TableCell>
-                <TableCell sx={{ maxWidth: 200 }}>
-                  <Typography variant="body2" fontWeight={500}>{story.title}</Typography>
+                <TableCell sx={{ maxWidth: 200, overflow: 'hidden' }}>
+                  <Typography variant="body2" fontWeight={500} noWrap>{story.title}</Typography>
                   <Typography variant="caption" color="text.secondary" noWrap>{story.description}</Typography>
                 </TableCell>
                 <TableCell><Chip label={story.points} size="small" color="primary" variant="outlined" /></TableCell>
@@ -520,7 +522,7 @@ export default function StoriesPage() {
         )}
         <DialogActions>
           <Button onClick={() => setDialogOpen(false)}>Cancel</Button>
-          <Button variant="contained" onClick={handleSave} disabled={isSaving || !form.title || !form.reporter || !form.assignee || !form.teamId || !form.sprintId}>{isSaving ? 'Saving…' : 'Save'}</Button>
+          <Button variant="contained" onClick={handleSave} disabled={isSaving || !form.title.trim() || !form.reporter.trim() || !form.assignee || !form.teamId || !form.sprintId}>{isSaving ? 'Saving…' : 'Save'}</Button>
         </DialogActions>
       </Dialog>
     </Box>

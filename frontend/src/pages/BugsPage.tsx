@@ -99,22 +99,24 @@ export default function BugsPage() {
 
   const handleSave = async () => {
     setSaveError('');
+    const trimmedForm = { ...form, title: form.title.trim(), reporter: form.reporter.trim() };
+    setForm(trimmedForm);
     setIsSaving(true);
     try {
       if (backendOnline) {
         if (editTarget) {
-          const updated = await apiUpdateBug(editTarget.id, form);
+          const updated = await apiUpdateBug(editTarget.id, trimmedForm);
           setBugs((prev) => prev.map((b) => (b.id === editTarget.id ? updated : b)));
         } else {
-          const created = await apiCreateBug(form);
+          const created = await apiCreateBug(trimmedForm);
           setBugs((prev) => [...prev, created]);
         }
       } else {
         if (editTarget) {
-          setBugs((prev) => prev.map((b) => (b.id === editTarget.id ? { ...form, id: editTarget.id } : b)));
+          setBugs((prev) => prev.map((b) => (b.id === editTarget.id ? { ...trimmedForm, id: editTarget.id } : b)));
         } else {
           const newId = `B-${String(bugs.length + 1).padStart(3, '0')}`;
-          setBugs((prev) => [...prev, { ...form, id: newId }]);
+          setBugs((prev) => [...prev, { ...trimmedForm, id: newId }]);
         }
       }
       setDialogOpen(false);
@@ -182,8 +184,8 @@ export default function BugsPage() {
                     {bug.id}
                   </Typography>
                 </TableCell>
-                <TableCell sx={{ maxWidth: 200 }}>
-                  <Typography variant="body2" fontWeight={500}>
+                <TableCell sx={{ maxWidth: 200, overflow: 'hidden' }}>
+                  <Typography variant="body2" fontWeight={500} noWrap>
                     {bug.title}
                   </Typography>
                   <Typography variant="caption" color="text.secondary" noWrap>
@@ -359,7 +361,7 @@ export default function BugsPage() {
             variant="contained"
             color="error"
             onClick={handleSave}
-            disabled={isSaving || !form.title || !form.reporter || !form.assignee}
+            disabled={isSaving || !form.title.trim() || !form.reporter.trim() || !form.assignee}
           >
             {isSaving ? 'Saving…' : 'Save'}
           </Button>
