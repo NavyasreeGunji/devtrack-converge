@@ -84,7 +84,8 @@ const emptyForm = { name: '', email: '', role: 'Developer' as DeveloperRole, tea
 function isValidEmail(email: string): boolean {
   if (!/^[a-zA-Z0-9_%+\-]+(\.[a-zA-Z0-9_%+\-]+)*@[a-zA-Z0-9]([a-zA-Z0-9\-]*[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9\-]*[a-zA-Z0-9])?)*\.[a-zA-Z]{2,}$/.test(email)) return false;
   const tld = email.split('.').pop() ?? '';
-  return !/(.)\1{2,}/.test(tld); // reject TLDs with 3+ identical consecutive chars (e.g. .commmm)
+  if (/(.)\1+$/.test(tld)) return false; // reject TLDs ending in repeated chars (.comm, .commmm)
+  return !/(.)\1{2,}/.test(tld);         // reject TLDs with 3+ identical consecutive chars anywhere
 }
 
 function isValidName(name: string): boolean {
