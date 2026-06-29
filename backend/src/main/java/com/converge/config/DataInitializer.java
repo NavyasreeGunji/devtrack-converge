@@ -3,6 +3,7 @@ package com.converge.config;
 import com.converge.entity.Developer;
 import com.converge.repository.DeveloperRepository;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
@@ -13,9 +14,11 @@ import java.util.Map;
 public class DataInitializer implements CommandLineRunner {
 
     private final DeveloperRepository developerRepository;
+    private final JdbcTemplate jdbc;
 
-    public DataInitializer(DeveloperRepository developerRepository) {
+    public DataInitializer(DeveloperRepository developerRepository, JdbcTemplate jdbc) {
         this.developerRepository = developerRepository;
+        this.jdbc = jdbc;
     }
 
     // username → projectTypes string for migration of existing records
@@ -39,6 +42,8 @@ public class DataInitializer implements CommandLineRunner {
 
     @Override
     public void run(String... args) {
+        alterColumnToText("sprint", "goal");
+        alterColumnToText("team", "description");
         migrateEmailDomain("criskasecurity.com");
         migrateProjectTypes();
 
@@ -64,6 +69,20 @@ public class DataInitializer implements CommandLineRunner {
 
         developerRepository.saveAll(developers);
         System.out.println("✓ Seeded " + developers.size() + " developers");
+    }
+
+    private void alterColumnToText(String table, String column) {
+        try {
+            String dataType = jdbc.queryForObject(
+                "SELECT data_type FROM information_schema.columns WHERE table_name = ? AND column_name = ?",
+                String.class, table, column);
+            if (!"text".equalsIgnoreCase(dataType)) {
+                jdbc.execute("ALTER TABLE " + table + " ALTER COLUMN " + column + " TYPE TEXT");
+                System.out.println("✓ Altered " + table + "." + column + " to TEXT");
+            }
+        } catch (Exception e) {
+            System.out.println("⚠ Could not alter " + table + "." + column + ": " + e.getMessage());
+        }
     }
 
     private void migrateProjectTypes() {
