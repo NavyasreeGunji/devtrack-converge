@@ -82,7 +82,9 @@ const ptColor: Record<ProjectType, { color: string; bg: string }> = {
 const emptyForm = { name: '', email: '', role: 'Developer' as DeveloperRole, teamIds: [] as string[], projectTypes: [] as ProjectType[] };
 
 function isValidEmail(email: string): boolean {
-  return /^[a-zA-Z0-9_%+\-]+(\.[a-zA-Z0-9_%+\-]+)*@[a-zA-Z0-9]([a-zA-Z0-9\-]*[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9\-]*[a-zA-Z0-9])?)*\.[a-zA-Z]{2,}$/.test(email);
+  if (!/^[a-zA-Z0-9_%+\-]+(\.[a-zA-Z0-9_%+\-]+)*@[a-zA-Z0-9]([a-zA-Z0-9\-]*[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9\-]*[a-zA-Z0-9])?)*\.[a-zA-Z]{2,}$/.test(email)) return false;
+  const tld = email.split('.').pop() ?? '';
+  return !/(.)\1{2,}/.test(tld); // reject TLDs with 3+ identical consecutive chars (e.g. .commmm)
 }
 
 function isValidName(name: string): boolean {
