@@ -62,7 +62,7 @@ const deployStatusLabel: Record<DeploymentStatus, string> = {
 
 export default function DashboardPage() {
   const navigate = useNavigate();
-  const { backendOnline, backendChecked } = useApp();
+  const { backendOnline, backendChecked, sprints } = useApp();
   const [stories, setStories] = useState<Story[]>([]);
   const [bugs, setBugs] = useState<Bug[]>([]);
   const [dailyLogs, setDailyLogs] = useState<DailyLog[]>([]);
@@ -178,7 +178,7 @@ export default function DashboardPage() {
                           {story.title}
                         </Typography>
                       }
-                      secondary={`${story.assignee} · Sprint ${story.sprintId}`}
+                      secondary={`${story.assignee} · ${sprints.find((s) => s.id === story.sprintId)?.name ?? ''}`}
                     />
                     <Box sx={{ display: 'flex', gap: 0.75, alignItems: 'center', flexShrink: 0 }}>
                       <Chip label={`${story.points}pt`} size="small" variant="outlined" color="primary" />
