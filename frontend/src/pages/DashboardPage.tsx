@@ -171,7 +171,7 @@ export default function DashboardPage() {
               {activeStories.map((story, i) => (
                 <Box key={story.id}>
                   {i > 0 && <Divider sx={{ my: 0.5 }} />}
-                  <ListItem disableGutters alignItems="flex-start" sx={{ py: 0.75 }}>
+                  <ListItem disableGutters alignItems="center" sx={{ py: 0.75, gap: 1 }}>
                     <ListItemText
                       primary={
                         <Typography variant="body2" fontWeight={500}>
@@ -180,7 +180,7 @@ export default function DashboardPage() {
                       }
                       secondary={`${story.assignee} · Sprint ${story.sprintId}`}
                     />
-                    <Box sx={{ display: 'flex', gap: 0.75, alignItems: 'center', mt: 0.25, flexShrink: 0 }}>
+                    <Box sx={{ display: 'flex', gap: 0.75, alignItems: 'center', flexShrink: 0 }}>
                       <Chip label={`${story.points}pt`} size="small" variant="outlined" color="primary" />
                       <Chip
                         label={storyStatusLabel[story.status]}
@@ -204,7 +204,7 @@ export default function DashboardPage() {
               {openBugList.map((bug, i) => (
                 <Box key={bug.id}>
                   {i > 0 && <Divider sx={{ my: 0.5 }} />}
-                  <ListItem disableGutters alignItems="flex-start" sx={{ py: 0.75 }}>
+                  <ListItem disableGutters alignItems="center" sx={{ py: 0.75, gap: 1 }}>
                     <ListItemText
                       primary={
                         <Typography variant="body2" fontWeight={500}>
@@ -223,7 +223,7 @@ export default function DashboardPage() {
                           ? 'warning'
                           : 'default'
                       }
-                      sx={{ flexShrink: 0, mt: 0.25 }}
+                      sx={{ flexShrink: 0 }}
                     />
                   </ListItem>
                 </Box>
@@ -289,7 +289,7 @@ export default function DashboardPage() {
               {recentDeployments.map((dep, i) => (
                 <Box key={dep.id}>
                   {i > 0 && <Divider sx={{ my: 0.5 }} />}
-                  <ListItem disableGutters alignItems="flex-start" sx={{ py: 0.75 }}>
+                  <ListItem disableGutters alignItems="center" sx={{ py: 0.75, gap: 1 }}>
                     <ListItemText
                       primary={
                         <Typography variant="body2" fontWeight={600}>
@@ -305,7 +305,7 @@ export default function DashboardPage() {
                       label={deployStatusLabel[dep.status]}
                       size="small"
                       color={deployStatusColor[dep.status]}
-                      sx={{ flexShrink: 0, mt: 0.25 }}
+                      sx={{ flexShrink: 0 }}
                     />
                   </ListItem>
                 </Box>
