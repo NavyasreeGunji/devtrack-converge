@@ -25,6 +25,12 @@ import { Story, initialStories, developers, StoryStatus } from '../data/mockData
 import { useApp } from '../context/AppContext';
 import { apiGetStories } from '../api/api';
 
+const fmtDate = (d?: string | null) => {
+  if (!d) return '—';
+  const [y, m, day] = d.split('-');
+  return `${day}-${m}-${y.slice(2)}`;
+};
+
 const statusConfig: Record<StoryStatus, { color: 'default' | 'primary' | 'warning' | 'success' | 'info'; label: string }> = {
   backlog:         { color: 'default',  label: 'Backlog' },
   to_do:           { color: 'default',  label: 'To Do' },
@@ -96,14 +102,14 @@ export default function ReportsPage() {
   );
 
   const handleExportCSV = () => {
-    const headers = ['ID', 'Title', 'Points', 'Status', 'Reporter', 'Assignee', 'Team', 'Sprint', 'Due Date', 'Created', 'Started', 'Completed'];
+    const headers = ['Story No.', 'Title', 'Points', 'Status', 'Reporter', 'Assignee', 'Team', 'Sprint', 'Due Date', 'Created', 'Started', 'Completed'];
     const rows = filtered.map((s) => {
       const team = teams.find((t) => t.id === s.teamId)?.name ?? '';
       const sprint = sprints.find((sp) => sp.id === s.sprintId);
       return [
-        s.id, `"${s.title}"`, s.points, statusConfig[s.status].label,
+        s.storyNumber || '', `"${s.title}"`, s.points, statusConfig[s.status].label,
         s.reporter, s.assignee, team, sprint?.name ?? '',
-        s.dueDate ?? '', s.createdDate, s.startedDate, s.completedDate,
+        fmtDate(s.dueDate), fmtDate(s.createdDate), fmtDate(s.startedDate), fmtDate(s.completedDate),
       ].join(',');
     });
     const csv = [headers.join(','), ...rows].join('\n');
@@ -208,13 +214,13 @@ export default function ReportsPage() {
       {/* Story Report Table */}
       <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 1 }}>
         <Typography variant="subtitle1" fontWeight={700}>Story Report</Typography>
-        <Typography variant="body2" color="text.secondary">— {filtered.length} stories · {totalPoints} pts</Typography>
+        <Typography variant="body2" color="text.secondary">{filtered.length} stories · {totalPoints} pts</Typography>
       </Stack>
       <TableContainer component={Paper} sx={{ mb: 3 }}>
         <Table size="small">
           <TableHead>
             <TableRow sx={{ bgcolor: '#F8FAFC' }}>
-              {['ID', 'Title', 'Pts', 'Status', 'Reporter', 'Assignee', 'Sprint', 'Due Date', 'Created', 'Started', 'Completed'].map((h) => (
+              {['Story No.', 'Title', 'Pts', 'Status', 'Reporter', 'Assignee', 'Sprint', 'Due Date', 'Created', 'Started', 'Completed'].map((h) => (
                 <TableCell key={h} sx={{ fontWeight: 600, fontSize: 12, color: '#64748b', whiteSpace: 'nowrap' }}>
                   {h}
                 </TableCell>
@@ -235,8 +241,8 @@ export default function ReportsPage() {
                   sx={isOverdue ? { bgcolor: '#fff5f5' } : undefined}
                 >
                   <TableCell>
-                    <Typography variant="caption" color="text.disabled" fontWeight={600} sx={{ whiteSpace: 'nowrap' }}>
-                      {story.id}
+                    <Typography variant="caption" color="primary" fontWeight={700} sx={{ whiteSpace: 'nowrap' }}>
+                      {story.storyNumber || '—'}
                     </Typography>
                   </TableCell>
                   <TableCell sx={{ maxWidth: 220 }}>
@@ -290,7 +296,7 @@ export default function ReportsPage() {
                             color: isOverdue ? '#dc2626' : 'text.secondary',
                           }}
                         >
-                          {dueDate}
+                          {fmtDate(dueDate)}
                         </Typography>
                         {isOverdue && (
                           <Typography variant="caption" sx={{ color: '#dc2626', fontWeight: 800 }}>!</Typography>
@@ -301,13 +307,13 @@ export default function ReportsPage() {
                     )}
                   </TableCell>
                   <TableCell>
-                    <Typography variant="caption" sx={{ whiteSpace: 'nowrap' }}>{story.createdDate || '—'}</Typography>
+                    <Typography variant="caption" sx={{ whiteSpace: 'nowrap' }}>{fmtDate(story.createdDate)}</Typography>
                   </TableCell>
                   <TableCell>
-                    <Typography variant="caption" sx={{ whiteSpace: 'nowrap' }}>{story.startedDate || '—'}</Typography>
+                    <Typography variant="caption" sx={{ whiteSpace: 'nowrap' }}>{fmtDate(story.startedDate)}</Typography>
                   </TableCell>
                   <TableCell>
-                    <Typography variant="caption" sx={{ whiteSpace: 'nowrap' }}>{story.completedDate || '—'}</Typography>
+                    <Typography variant="caption" sx={{ whiteSpace: 'nowrap' }}>{fmtDate(story.completedDate)}</Typography>
                   </TableCell>
                 </TableRow>
               );
