@@ -140,6 +140,16 @@ export default function DailyLogPage() {
     copyToClipboard(text);
   };
 
+  const copyAll = () => {
+    const text = devNames.map((dev) => {
+      const devLogs = filtered.filter((l) => l.developer === dev);
+      return `${dev}\n` + devLogs.map((l) =>
+        `${fmtDate(l.date)} | ${l.title} | ${l.description} (${l.hours}h)`
+      ).join('\n');
+    }).join('\n\n');
+    copyToClipboard(text);
+  };
+
   const handleExportCSV = () => {
     const headers = ['Developer', 'Date', 'Task / Story', 'Description', 'Hours'];
     const rows = filtered.map((l) => [
@@ -243,18 +253,15 @@ export default function DailyLogPage() {
         </Button>
       </Stack>
 
-      {/* Copy All per developer when "All Developers" selected */}
+      {/* Copy All button when "All Developers" selected */}
       {showDevColumn && devNames.length > 0 && (
-        <Stack direction="row" spacing={1} sx={{ mb: 1.5 }} flexWrap="wrap" useFlexGap>
-          {devNames.map((dev) => (
-            <Tooltip key={dev} title={`Copy all logs for ${dev}`}>
-              <Button size="small" variant="outlined" startIcon={<ContentCopyIcon />}
-                sx={{ fontSize: 11 }} onClick={() => copyAllForDev(dev)}>
-                Copy {dev.split(' ')[0]}
-              </Button>
-            </Tooltip>
-          ))}
-        </Stack>
+        <Box sx={{ mb: 1.5 }}>
+          <Tooltip title="Copy all developers' logs">
+            <Button size="small" variant="outlined" startIcon={<ContentCopyIcon />} onClick={copyAll}>
+              Copy All
+            </Button>
+          </Tooltip>
+        </Box>
       )}
 
       <TableContainer component={Paper}>
