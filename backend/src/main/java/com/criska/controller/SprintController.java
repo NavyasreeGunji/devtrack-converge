@@ -1,0 +1,47 @@
+package com.criska.controller;
+
+import com.criska.entity.Sprint;
+import com.criska.repository.SprintRepository;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+import java.util.List;
+
+@RestController
+@RequestMapping("/api/sprints")
+public class SprintController {
+
+    private final SprintRepository repository;
+
+    public SprintController(SprintRepository repository) {
+        this.repository = repository;
+    }
+
+    @GetMapping
+    public List<Sprint> list() {
+        return repository.findAll();
+    }
+
+    @GetMapping("/team/{teamId}")
+    public List<Sprint> byTeam(@PathVariable("teamId") Long teamId) {
+        return repository.findByTeamId(teamId);
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<Sprint> get(@PathVariable("id") Long id) {
+        return repository.findById(id)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
+    }
+
+    @PostMapping
+    public Sprint create(@RequestBody Sprint sprint) {
+        return repository.save(sprint);
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<Sprint> update(@PathVariable("id") Long id, @RequestBody Sprint sprint) {
+        if (!repository.existsById(id)) return ResponseEntity.notFound().build();
+        sprint.setId(id);
+        return ResponseEntity.ok(repository.save(sprint));
+    }
+}
