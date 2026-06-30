@@ -411,7 +411,7 @@ export default function StoriesPage() {
         <Table size="small">
           <TableHead>
             <TableRow sx={{ bgcolor: '#F8FAFC' }}>
-              {['ID', 'Title', 'Points', 'Status', 'Reporter', 'Assignee', 'Created', 'Due Date', 'Started', 'Completed', ''].map((h) => (
+              {['Title', 'Points', 'Status', 'Reporter', 'Assignee', 'Created', 'Due Date', 'Started', 'Completed', ''].map((h) => (
                 <TableCell key={h} sx={{ fontWeight: 600, fontSize: 12, color: '#64748b' }}>{h}</TableCell>
               ))}
             </TableRow>
@@ -419,14 +419,13 @@ export default function StoriesPage() {
           <TableBody>
             {filtered.length === 0 && (
               <TableRow>
-                <TableCell colSpan={10} sx={{ textAlign: 'center', py: 4 }}>
+                <TableCell colSpan={9} sx={{ textAlign: 'center', py: 4 }}>
                   <Typography color="text.secondary">No stories found</Typography>
                 </TableCell>
               </TableRow>
             )}
             {filtered.map((story) => (
               <TableRow key={story.id} hover>
-                <TableCell><Typography variant="caption" color="text.disabled" fontWeight={600}>{story.id}</Typography></TableCell>
                 <TableCell sx={{ maxWidth: 220, overflow: 'hidden' }}>
                   <Typography
                     variant="body2" fontWeight={500} noWrap
