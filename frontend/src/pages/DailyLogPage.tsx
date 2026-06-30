@@ -24,8 +24,15 @@ import {
   Autocomplete,
   ToggleButton,
   ToggleButtonGroup,
+  IconButton,
+  Tooltip,
+  Snackbar,
+  Divider,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
+import VisibilityIcon from '@mui/icons-material/Visibility';
+import ContentCopyIcon from '@mui/icons-material/ContentCopy';
+import DownloadIcon from '@mui/icons-material/Download';
 import Alert from '@mui/material/Alert';
 import {
   DailyLog,
@@ -49,6 +56,12 @@ function getWeekRange(): [string, string] {
   sun.setDate(mon.getDate() + 6);
   return [mon.toISOString().slice(0, 10), sun.toISOString().slice(0, 10)];
 }
+
+const fmtDate = (d: string) => {
+  if (!d) return d;
+  const [y, m, day] = d.split('-');
+  return `${day}-${m}-${y.slice(2)}`;
+};
 
 const emptyForm = (): Omit<DailyLog, 'id'> => ({
   developer: '',
@@ -84,6 +97,8 @@ export default function DailyLogPage() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [saveError, setSaveError] = useState('');
   const [isSaving, setIsSaving] = useState(false);
+  const [viewLog, setViewLog] = useState<DailyLog | null>(null);
+  const [copied, setCopied] = useState(false);
   const [form, setForm] = useState<Omit<DailyLog, 'id'>>({
     ...emptyForm(),
     developer: currentUser?.name ?? '',
@@ -104,7 +119,6 @@ export default function DailyLogPage() {
         const [mon, sun] = getWeekRange();
         return l.date >= mon && l.date <= sun;
       }
-      // custom range
       if (fromDate && toDate) return l.date >= fromDate && l.date <= toDate;
       if (fromDate) return l.date >= fromDate;
       if (toDate) return l.date <= toDate;
@@ -113,6 +127,33 @@ export default function DailyLogPage() {
     .sort((a, b) => b.date.localeCompare(a.date) || a.developer.localeCompare(b.developer));
 
   const totalHours = filtered.reduce((sum, l) => sum + l.hours, 0);
+
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text).then(() => setCopied(true));
+  };
+
+  const copyAllForDev = (devName: string) => {
+    const devLogs = filtered.filter((l) => l.developer === devName);
+    const text = `${devName}\n` + devLogs.map((l) =>
+      `${fmtDate(l.date)} | ${l.title} | ${l.description} (${l.hours}h)`
+    ).join('\n');
+    copyToClipboard(text);
+  };
+
+  const handleExportCSV = () => {
+    const headers = ['Developer', 'Date', 'Task / Story', 'Description', 'Hours'];
+    const rows = filtered.map((l) => [
+      l.developer, fmtDate(l.date), `"${l.title}"`, `"${l.description}"`, l.hours,
+    ].join(','));
+    const csv = [headers.join(','), ...rows].join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `daily-log-${today}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
 
   const handleSave = async () => {
     setSaveError('');
@@ -136,16 +177,15 @@ export default function DailyLogPage() {
 
   const showDevColumn = filterDev === 'all';
 
+  // Group by developer for "Copy All" button
+  const devNames = [...new Set(filtered.map((l) => l.developer))];
+
   return (
     <Box>
       <Stack direction="row" spacing={2} sx={{ mb: 2 }} alignItems="center" flexWrap="wrap" useFlexGap>
         <FormControl size="small" sx={{ minWidth: 160 }}>
           <InputLabel>Developer</InputLabel>
-          <Select
-            value={filterDev}
-            label="Developer"
-            onChange={(e) => setFilterDev(e.target.value)}
-          >
+          <Select value={filterDev} label="Developer" onChange={(e) => setFilterDev(e.target.value)}>
             <MenuItem value="all">All Developers</MenuItem>
             {developerProfiles.map((d) => (
               <MenuItem key={d.id} value={d.name}>{d.name}</MenuItem>
@@ -167,78 +207,117 @@ export default function DailyLogPage() {
 
         <Stack direction="row" spacing={1} alignItems="center">
           <Typography variant="caption" color="text.secondary" sx={{ whiteSpace: 'nowrap' }}>From</Typography>
-          <TextField
-            type="date"
-            size="small"
-            value={fromDate}
+          <TextField type="date" size="small" value={fromDate}
             onChange={(e) => { setFromDate(e.target.value); setFilterPeriod('custom'); }}
-            sx={{ width: 140 }}
-          />
+            sx={{ width: 140 }} />
           <Typography variant="caption" color="text.secondary">To</Typography>
-          <TextField
-            type="date"
-            size="small"
-            value={toDate}
+          <TextField type="date" size="small" value={toDate}
             onChange={(e) => { setToDate(e.target.value); setFilterPeriod('custom'); }}
-            sx={{ width: 140 }}
-          />
+            sx={{ width: 140 }} />
         </Stack>
 
         <Typography variant="body2" color="text.secondary">
           {filtered.length} entries · {totalHours}h total
         </Typography>
         <Box sx={{ flexGrow: 1 }} />
-        <Button
-          variant="contained"
-          startIcon={<AddIcon />}
-          onClick={() => {
-            setSaveError('');
-            setForm({ ...emptyForm(), developer: currentUser?.name ?? '' });
-            setDialogOpen(true);
-          }}
-        >
+
+        <Tooltip title="Export CSV">
+          <Button variant="outlined" size="small" startIcon={<DownloadIcon />} onClick={handleExportCSV}>
+            Export CSV
+          </Button>
+        </Tooltip>
+
+        {/* Copy All per developer (shown when single dev selected) */}
+        {filterDev !== 'all' && filtered.length > 0 && (
+          <Tooltip title={`Copy all logs for ${filterDev}`}>
+            <Button variant="outlined" size="small" startIcon={<ContentCopyIcon />}
+              onClick={() => copyAllForDev(filterDev)}>
+              Copy All
+            </Button>
+          </Tooltip>
+        )}
+
+        <Button variant="contained" startIcon={<AddIcon />}
+          onClick={() => { setSaveError(''); setForm({ ...emptyForm(), developer: currentUser?.name ?? '' }); setDialogOpen(true); }}>
           Log Work
         </Button>
       </Stack>
+
+      {/* Copy All per developer when "All Developers" selected */}
+      {showDevColumn && devNames.length > 0 && (
+        <Stack direction="row" spacing={1} sx={{ mb: 1.5 }} flexWrap="wrap" useFlexGap>
+          {devNames.map((dev) => (
+            <Tooltip key={dev} title={`Copy all logs for ${dev}`}>
+              <Button size="small" variant="outlined" startIcon={<ContentCopyIcon />}
+                sx={{ fontSize: 11 }} onClick={() => copyAllForDev(dev)}>
+                Copy {dev.split(' ')[0]}
+              </Button>
+            </Tooltip>
+          ))}
+        </Stack>
+      )}
 
       <TableContainer component={Paper}>
         <Table size="small">
           <TableHead>
             <TableRow sx={{ bgcolor: '#F8FAFC' }}>
-              <TableCell sx={{ fontWeight: 600, fontSize: 12, color: '#64748b', textAlign: 'center', width: '12%' }}>Date</TableCell>
+              <TableCell sx={{ fontWeight: 600, fontSize: 12, color: '#64748b', width: '10%' }}>Date</TableCell>
               {showDevColumn && (
-                <TableCell sx={{ fontWeight: 600, fontSize: 12, color: '#64748b', textAlign: 'center', width: '16%' }}>Developer</TableCell>
+                <TableCell sx={{ fontWeight: 600, fontSize: 12, color: '#64748b', width: '16%' }}>Developer</TableCell>
               )}
-              <TableCell sx={{ fontWeight: 600, fontSize: 12, color: '#64748b', textAlign: 'center', width: showDevColumn ? '24%' : '28%' }}>Title</TableCell>
-              <TableCell sx={{ fontWeight: 600, fontSize: 12, color: '#64748b', textAlign: 'center' }}>Description</TableCell>
-              <TableCell sx={{ fontWeight: 600, fontSize: 12, color: '#64748b', textAlign: 'center', width: '10%' }}>Hours</TableCell>
+              <TableCell sx={{ fontWeight: 600, fontSize: 12, color: '#64748b', width: '22%' }}>Task / Story</TableCell>
+              <TableCell sx={{ fontWeight: 600, fontSize: 12, color: '#64748b' }}>Description</TableCell>
+              <TableCell sx={{ fontWeight: 600, fontSize: 12, color: '#64748b', width: '8%', textAlign: 'center' }}>Hours</TableCell>
+              <TableCell sx={{ fontWeight: 600, fontSize: 12, color: '#64748b', width: '8%', textAlign: 'center' }}>Actions</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
             {filtered.map((log) => (
               <TableRow key={log.id} hover>
-                <TableCell sx={{ textAlign: 'center' }}>
-                  <Typography variant="body2">{log.date}</Typography>
+                <TableCell>
+                  <Typography variant="body2">{fmtDate(log.date)}</Typography>
                 </TableCell>
                 {showDevColumn && (
-                  <TableCell sx={{ textAlign: 'center' }}>
+                  <TableCell>
                     <Typography variant="body2" fontWeight={500}>{log.developer}</Typography>
                   </TableCell>
                 )}
-                <TableCell sx={{ textAlign: 'center' }}>
+                <TableCell>
                   <Typography variant="body2" fontWeight={600}>{log.title}</Typography>
                 </TableCell>
                 <TableCell sx={{ maxWidth: 300 }}>
-                  <Typography variant="body2" sx={{ wordBreak: 'break-word', overflowWrap: 'break-word' }}>{log.description}</Typography>
+                  <Typography variant="body2" sx={{
+                    display: '-webkit-box',
+                    WebkitLineClamp: 1,
+                    WebkitBoxOrient: 'vertical',
+                    overflow: 'hidden',
+                    color: 'text.secondary',
+                  }}>
+                    {log.description}
+                  </Typography>
                 </TableCell>
                 <TableCell sx={{ textAlign: 'center' }}>
                   <Typography variant="body2" fontWeight={700}>{log.hours}h</Typography>
+                </TableCell>
+                <TableCell sx={{ textAlign: 'center' }}>
+                  <Stack direction="row" spacing={0.5} justifyContent="center">
+                    <Tooltip title="View full description">
+                      <IconButton size="small" onClick={() => setViewLog(log)}>
+                        <VisibilityIcon fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
+                    <Tooltip title="Copy description">
+                      <IconButton size="small" onClick={() => copyToClipboard(log.description)}>
+                        <ContentCopyIcon fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
+                  </Stack>
                 </TableCell>
               </TableRow>
             ))}
             {filtered.length === 0 && (
               <TableRow>
-                <TableCell colSpan={showDevColumn ? 5 : 4} sx={{ textAlign: 'center', py: 4, color: '#94a3b8' }}>
+                <TableCell colSpan={showDevColumn ? 6 : 5} sx={{ textAlign: 'center', py: 4, color: '#94a3b8' }}>
                   No logs found for this period
                 </TableCell>
               </TableRow>
@@ -247,6 +326,38 @@ export default function DailyLogPage() {
         </Table>
       </TableContainer>
 
+      {/* View Log Dialog */}
+      {viewLog && (
+        <Dialog open={!!viewLog} onClose={() => setViewLog(null)} maxWidth="sm" fullWidth>
+          <DialogTitle>
+            <Stack direction="row" alignItems="center" justifyContent="space-between">
+              <Box>
+                <Typography variant="h6" fontWeight={700}>{viewLog.title}</Typography>
+                <Typography variant="caption" color="text.secondary">
+                  {viewLog.developer} · {fmtDate(viewLog.date)} · {viewLog.hours}h
+                </Typography>
+              </Box>
+            </Stack>
+          </DialogTitle>
+          <DialogContent>
+            <Divider sx={{ mb: 2 }} />
+            <Typography variant="caption" color="text.secondary" fontWeight={600} display="block" sx={{ mb: 0.75 }}>
+              Description
+            </Typography>
+            <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word', lineHeight: 1.8 }}>
+              {viewLog.description}
+            </Typography>
+          </DialogContent>
+          <DialogActions>
+            <Button startIcon={<ContentCopyIcon />} onClick={() => copyToClipboard(viewLog.description)}>
+              Copy Description
+            </Button>
+            <Button variant="contained" onClick={() => setViewLog(null)}>Close</Button>
+          </DialogActions>
+        </Dialog>
+      )}
+
+      {/* Add Log Dialog */}
       <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)} maxWidth="sm" fullWidth>
         <DialogTitle>Log Daily Work</DialogTitle>
         <DialogContent>
@@ -254,27 +365,17 @@ export default function DailyLogPage() {
             <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
               <FormControl size="small" fullWidth required>
                 <InputLabel required>Developer</InputLabel>
-                <Select
-                  value={form.developer}
-                  label="Developer"
-                  onChange={(e) => setForm((f) => ({ ...f, developer: e.target.value, title: '' }))}
-                >
+                <Select value={form.developer} label="Developer"
+                  onChange={(e) => setForm((f) => ({ ...f, developer: e.target.value, title: '' }))}>
                   {developerProfiles.map((d) => (
                     <MenuItem key={d.id} value={d.name}>{d.name}</MenuItem>
                   ))}
                 </Select>
               </FormControl>
-              <TextField
-                label="Date"
-                type="date"
-                value={form.date}
+              <TextField label="Date" type="date" value={form.date}
                 onChange={(e) => setForm((f) => ({ ...f, date: e.target.value }))}
-                size="small"
-                InputLabelProps={{ shrink: true }}
-                inputProps={{ max: today }}
-                fullWidth
-                required
-              />
+                size="small" InputLabelProps={{ shrink: true }} inputProps={{ max: today }}
+                fullWidth required />
             </Stack>
 
             <Autocomplete
@@ -283,52 +384,34 @@ export default function DailyLogPage() {
               value={devStories.find((s) => s.title === form.title) ?? null}
               onChange={(_, story) => setForm((f) => ({ ...f, title: story?.title ?? '' }))}
               renderInput={(params) => (
-                <TextField
-                  {...params}
-                  label="Story / Task"
-                  size="small"
+                <TextField {...params} label="Story / Task" size="small"
                   placeholder={devStories.length === 0 ? 'No stories assigned to this developer' : 'Select a story…'}
-                  required
-                />
+                  required />
               )}
               noOptionsText="No stories assigned to this developer"
             />
 
-            <TextField
-              label="Description"
-              value={form.description}
+            <TextField label="Description" value={form.description}
               onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
-              fullWidth
-              size="small"
-              multiline
-              rows={3}
-              required
-              placeholder="What did you work on today?"
-            />
-            <TextField
-              label="Hours"
-              type="number"
-              value={form.hours}
+              fullWidth size="small" multiline rows={3} required
+              placeholder="What did you work on today?" />
+            <TextField label="Hours" type="number" value={form.hours}
               onChange={(e) => setForm((f) => ({ ...f, hours: Number(e.target.value) }))}
-              size="small"
-              sx={{ width: 120 }}
-              inputProps={{ min: 0.5, max: 12, step: 0.5 }}
-              required
-            />
+              size="small" sx={{ width: 120 }} inputProps={{ min: 0.5, max: 12, step: 0.5 }} required />
           </Stack>
         </DialogContent>
         {saveError && <Alert severity="error" sx={{ mx: 3, mb: 1 }}>{saveError}</Alert>}
         <DialogActions>
           <Button onClick={() => setDialogOpen(false)}>Cancel</Button>
-          <Button
-            variant="contained"
-            onClick={handleSave}
-            disabled={isSaving || !form.developer || !form.title || !form.description || form.hours <= 0}
-          >
+          <Button variant="contained" onClick={handleSave}
+            disabled={isSaving || !form.developer || !form.title || !form.description || form.hours <= 0}>
             {isSaving ? 'Saving…' : 'Save'}
           </Button>
         </DialogActions>
       </Dialog>
+
+      <Snackbar open={copied} autoHideDuration={2000} onClose={() => setCopied(false)}
+        message="Copied to clipboard" anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }} />
     </Box>
   );
 }
