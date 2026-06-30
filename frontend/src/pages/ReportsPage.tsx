@@ -102,14 +102,14 @@ export default function ReportsPage() {
   );
 
   const handleExportCSV = () => {
-    const headers = ['Story No.', 'Title', 'Points', 'Status', 'Reporter', 'Assignee', 'Team', 'Sprint', 'Due Date', 'Created', 'Started', 'Completed'];
+    const headers = ['Story No.', 'Title', 'Points', 'Status', 'Reporter', 'Assignee', 'Team', 'Sprint', 'Due Date', 'Started', 'Completed'];
     const rows = filtered.map((s) => {
       const team = teams.find((t) => t.id === s.teamId)?.name ?? '';
       const sprint = sprints.find((sp) => sp.id === s.sprintId);
       return [
         s.storyNumber || '', `"${s.title}"`, s.points, statusConfig[s.status].label,
         s.reporter, s.assignee, team, sprint?.name ?? '',
-        fmtDate(s.dueDate), fmtDate(s.createdDate), fmtDate(s.startedDate), fmtDate(s.completedDate),
+        fmtDate(s.dueDate), fmtDate(s.startedDate), fmtDate(s.completedDate),
       ].join(',');
     });
     const csv = [headers.join(','), ...rows].join('\n');
@@ -220,7 +220,7 @@ export default function ReportsPage() {
         <Table size="small">
           <TableHead>
             <TableRow sx={{ bgcolor: '#F8FAFC' }}>
-              {['Story No.', 'Title', 'Pts', 'Status', 'Reporter', 'Assignee', 'Sprint', 'Due Date', 'Created', 'Started', 'Completed'].map((h) => (
+              {['Story No.', 'Title', 'Pts', 'Status', 'Reporter', 'Assignee', 'Sprint', 'Due Date', 'Started', 'Completed'].map((h) => (
                 <TableCell key={h} sx={{ fontWeight: 600, fontSize: 12, color: '#64748b', whiteSpace: 'nowrap' }}>
                   {h}
                 </TableCell>
@@ -307,9 +307,6 @@ export default function ReportsPage() {
                     )}
                   </TableCell>
                   <TableCell>
-                    <Typography variant="caption" sx={{ whiteSpace: 'nowrap' }}>{fmtDate(story.createdDate)}</Typography>
-                  </TableCell>
-                  <TableCell>
                     <Typography variant="caption" sx={{ whiteSpace: 'nowrap' }}>{fmtDate(story.startedDate)}</Typography>
                   </TableCell>
                   <TableCell>
@@ -325,7 +322,7 @@ export default function ReportsPage() {
               <TableCell>
                 <Typography variant="body2" fontWeight={800} color="primary">{totalPoints} pts</Typography>
               </TableCell>
-              <TableCell colSpan={8} />
+              <TableCell colSpan={7} />
             </TableRow>
           </TableBody>
         </Table>

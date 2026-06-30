@@ -412,7 +412,7 @@ export default function StoriesPage() {
         <Table size="small">
           <TableHead>
             <TableRow sx={{ bgcolor: '#F8FAFC' }}>
-              {['Story No.', 'Title', 'Points', 'Status', 'Reporter', 'Assignee', 'Created', 'Due Date', 'Started', 'Completed', ''].map((h) => (
+              {['Story No.', 'Title', 'Points', 'Status', 'Reporter', 'Assignee', 'Due Date', 'Started', 'Completed', ''].map((h) => (
                 <TableCell key={h} sx={{ fontWeight: 600, fontSize: 12, color: '#64748b' }}>{h}</TableCell>
               ))}
             </TableRow>
@@ -420,7 +420,7 @@ export default function StoriesPage() {
           <TableBody>
             {filtered.length === 0 && (
               <TableRow>
-                <TableCell colSpan={11} sx={{ textAlign: 'center', py: 4 }}>
+                <TableCell colSpan={10} sx={{ textAlign: 'center', py: 4 }}>
                   <Typography color="text.secondary">No stories found</Typography>
                 </TableCell>
               </TableRow>
@@ -443,7 +443,6 @@ export default function StoriesPage() {
                 <TableCell><Chip label={statusLabel(story.status)} size="small" color={statusColor(story.status)} /></TableCell>
                 <TableCell><Typography variant="body2">{story.reporter}</Typography></TableCell>
                 <TableCell><Typography variant="body2">{story.assignee}</Typography></TableCell>
-                <TableCell><Typography variant="caption">{fmtDate(story.createdDate)}</Typography></TableCell>
                 <TableCell>
                   {story.dueDate ? (() => {
                     const today = new Date().toISOString().slice(0, 10);
