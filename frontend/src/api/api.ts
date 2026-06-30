@@ -69,6 +69,7 @@ function mapSprint(s: any): Sprint {
 function mapStory(s: any): Story {
   return {
     id: String(s.id),
+    storyNumber: s.storyNumber ?? '',
     title: s.title ?? '',
     description: s.description ?? '',
     points: s.points ?? 0,
