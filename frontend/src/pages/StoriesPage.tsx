@@ -412,7 +412,7 @@ export default function StoriesPage() {
         <Table size="small">
           <TableHead>
             <TableRow sx={{ bgcolor: '#F8FAFC' }}>
-              {['Story No.', 'Title', 'Points', 'Status', 'Reporter', 'Assignee', 'Due Date', 'Started', 'Completed', ''].map((h) => (
+              {['Story No.', 'Title', 'Points', 'Status', 'Reporter', 'Assignee', 'Due Date', 'Started', 'Completed', 'Actions'].map((h) => (
                 <TableCell key={h} sx={{ fontWeight: 600, fontSize: 12, color: '#64748b' }}>{h}</TableCell>
               ))}
             </TableRow>
